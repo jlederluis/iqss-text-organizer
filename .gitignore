@@ -1,4 +1,6 @@
 *~
 *.pyc
-textdb.sqlite
-textorganizer.cnf
+lucene_index/*
+lucene_index
+.ropeproject/*
+.ropeproject

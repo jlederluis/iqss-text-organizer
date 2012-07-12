@@ -1,69 +1,97 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import clint
 import sys
 import os
-from textorganizer import add, config, select, view
+import lucene
+from textorganizer import config, select, view, indexfiles, searchfiles
 
+class TextOrganizer:
+    def __init__(self,lucenedir):
+        self.lucenedir = lucenedir
+        #lucene object containing selected documents
+        self.scoreDocs = None
+        #list of all terms in selected documents
+        self.allTerms = None
+        #dictionary containing TDM for selected documents        
+        self.allDicts = None
 
-def parseargs(grouped_args,configuration):
-    
-    if '-c' in grouped_args:
-        if len(grouped_args['-c']) == 0:
-            print '-c flag passed, but no CSV file given. Ignoring -c flag'
-            use_csv = False
-        elif len(grouped_args['-c']) > 1:
-            print 'Only one CSV metadata file can be passed. Ignoring -c flag'
-            use_csv = False
+    def parseargs(self,grouped_args):
+        
+        if '-a' in grouped_args:
+            if len(grouped_args['-a']) == 1:
+                add_files = True
+            elif len(grouped_args['-a']) == 0:
+                print 'Add_files flag passed, but no directory given. Ignoring -a flag.'
+                add_files = False
+            elif len(grouped_args['-a']) > 1:
+                print 'Only one directory may be passed to txtorg -a. Ignoring -a flag.'
+                add_files = False
         else:
-            use_csv = True
-            csv_file = grouped_args['-c'][0]
-    else:
-        use_csv = False
-
-    if '-a' in grouped_args:
-        if len(grouped_args['-a']) == 0:
-            print 'Add_files flag passed, but no files given. Ignoring -a flag'
             add_files = False
+
+        if add_files:
+            indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
         else:
-            if use_csv: print 'Only one adding mode (-a or -c) may be used at one time. Reverting to interactive mode'
-            add_files = True
-    else:
-        add_files = False
+            self.mainprompt()
 
-    if add_files and use_csv:
-        mainprompt(configuration)
-    elif add_files:
-        add.process_raw_files_interactive(grouped_args['-a'][:],configuration)
-    elif use_csv:
-        add.process_raw_files_with_metadata_file(csv_file,configuration)
-    else:
-        mainprompt(configuration)
+    
 
-def mainprompt(configuration):
-    print "Welcome message."
-    while True:
+
+    def mainprompt(self):
+        print "Welcome message."
+        while True:
         #present user with a prompt, grab input, and convert to lowercase
-        instr=raw_input("> ").lower()
-        if instr == 'q' or instr == 'quit' or instr == 'exit':
-            break
-        elif instr.startswith('select '):
-            selection = select.selection(instr[7:],configuration['dblocation'])
-            print str(len(selection.selecteditems))+" files selected."
-        elif instr.startswith('export '):
-            selection.parseargs_export(instr[7:])
-        elif instr.startswith('view '):
-            viewdb = view.viewdb(instr[5:],configuration['dblocation'])
-        elif instr.startswith('add '):
+            instr=raw_input("> ").lower()
+
+            if instr == 'q' or instr == 'quit' or instr == 'exit':
+                break
+            elif instr.startswith('select '):
+                self.run_searcher(instr[7:])
+            elif instr.startswith('export tdm'):
+                self.export_tdm()
+            elif instr.startswith('view '):
+                viewdb = view.viewdb(instr[5:],configuration['dblocation'])
+            elif instr.startswith('add '):
             #add.process_raw_files(FILENAMES,configuration['dblocation'])
             #need a good way to get a list of filenames from the interactive prompt
-            print '\'add\' is not yet supported from the interactive prompt. Please use \'txtorg add [filename]\' from the shell.'
+                print '\'add\' is not yet supported from the interactive prompt. Please use \'txtorg add [filename]\' from the shell.'
+            else:
+                print "Input not understood. Type 'h' or 'help' for help."
+
+    def run_searcher(self,command):
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+        reader = lucene.IndexReader.open(directory, True)
+        analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+
+        self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, analyzer, reader, command)
+        #Alex, you mentioned at the top of searchfiles.py that searcher.close() sometimes causes stack overflows, but it was not commented out. Did you fix this issue?
+
+        searcher.close()
+
+    def export_tdm(self):
+        if (self.scoreDocs is None) or (self.allTerms is None) or (self.allDicts is None):
+            print "Select documents with \"select [query]\" before exporting TDM"
+            return False
+
+        print "Choose a file for export (leave blank to accept default -> ./tdm.csv)"
+        outfile = './tdm.csv'
+        outfile_raw = raw_input()
+        if outfile_raw == "":
+            outfile = os.path.realpath(outfile)
         else:
-            print "Input not understood. Type 'h' or 'help' for help."
+            outfile = os.path.realpath(os.path.expanduser(outfile_raw))
 
+        print "Exporting TDM to ", outfile
+        searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
+        
 if __name__ == '__main__':
-    programdir = os.path.join(os.path.dirname(__file__))
-    configuration = config.get_and_check_config(os.path.join(programdir,"textorganizer.cnf"),programdir)
-    configuration['programdir'] = programdir
+    lucene.initVM()
+    print 'lucene', lucene.VERSION
 
-    parseargs(clint.args.grouped,configuration)
+    programdir = os.path.join(os.path.dirname(__file__))
+    lucenedir = os.path.join(programdir,'lucene_index')
+
+    main = TextOrganizer(lucenedir)
+    main.parseargs(clint.args.grouped)
