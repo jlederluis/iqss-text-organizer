@@ -4,7 +4,7 @@ import clint
 import sys
 import os
 import lucene
-from textorganizer import config, select, view, indexfiles, searchfiles
+from textorganizer import indexfiles, searchfiles
 
 class TextOrganizer:
     def __init__(self,lucenedir):
