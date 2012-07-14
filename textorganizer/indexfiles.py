@@ -59,7 +59,7 @@ class IndexFiles(object):
                     doc.add(lucene.Field("name", filename,
                                          lucene.Field.Store.YES,
                                          lucene.Field.Index.NOT_ANALYZED))
-                    doc.add(lucene.Field("path", path,
+                    doc.add(lucene.Field("path", os.path.realpath(path),
                                          lucene.Field.Store.YES,
                                          lucene.Field.Index.NOT_ANALYZED))
                     if len(contents) > 0:
