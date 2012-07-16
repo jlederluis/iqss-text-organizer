@@ -1,1 +1,1 @@
-__all__ = ["add", "config","select","view"]
+__all__ = ["indexfiles", "searchfiles"]
