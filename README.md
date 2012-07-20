@@ -33,12 +33,13 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 
 #### select
 
-SYNTAX:
 * `select [QUERY]` --- runs lucene query QUERY on the database, and prints the number of documents selected.
 
 #### export
 
-SYNTAX:
 * `export files` --- exports the full text of all selected documents to a directory (unsupported)
 * `export tdm` --- exports a term-document matrix for all selected documents to a file. The exported file is a CSV file where the columns are terms and the rows are files.
 
+#### view
+
+* `view fields` --- prints the names and values of all defined metadata fields for each of the selected documents.
