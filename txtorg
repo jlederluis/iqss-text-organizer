@@ -54,7 +54,7 @@ class TextOrganizer:
         self.mainprompt()
 
     def mainprompt(self):
-        print "Welcome message."
+        print "Entering interactive mode. Type 'h' or 'help' for supported syntax."
         while True:
         #present user with a prompt, grab input, and convert to lowercase
             instr=raw_input("> ").lower()

@@ -49,6 +49,8 @@ def add_metadata_to_doc(lucenedoc,fieldnames,values):
 
 def add_metadata_from_csv(searcher,reader,writer,csvfile):
     csvreader = csv.reader(codecs.open(csvfile,encoding='UTF-8'),delimiter=',',quotechar='"')
+    failed = False
+
     for count,line in enumerate(csvreader):
 
         # read fieldnames from first line. May want to alert user if first line doesn't seem to be fieldnames
@@ -64,7 +66,8 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile):
 
         scoreDocs = docs_from_filepath(searcher,reader,filepath)
         if len(scoreDocs) == 0:
-            print "Could not locate document", filepath
+            print "Could not locate document {0}".format(filepath)
+            failed = True
 
         for scoreDoc in scoreDocs:
             print "Updating document",filepath,"..."
@@ -77,6 +80,9 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile):
 
     print "Optimizing index..."
     writer.optimize()
+
+    if failed:
+        print "Could not locate index entries for some paths. Use txtorg -a [directory] to add files to index before adding metadata."
 
 if __name__ == '__main__':
     STORE_DIR = "/home/sam/Documents/IQSS/iqss-text-organizer/lucene_index/"
