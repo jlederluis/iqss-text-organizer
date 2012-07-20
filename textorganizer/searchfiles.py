@@ -43,6 +43,7 @@ def run(searcher, analyzer, reader, command):
     for scoreDoc in scoreDocs:
         doc = searcher.doc(scoreDoc.doc)
         vector = reader.getTermFreqVector(scoreDoc.doc,"contents")
+        if vector is None: continue
         #print 'path:', doc.get("path"), 'name:', doc.get("name")
         d = dict()
         allTerms = allTerms.union(map(lambda x: x.encode('utf-8'),vector.getTerms()))

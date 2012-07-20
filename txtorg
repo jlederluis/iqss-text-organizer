@@ -4,7 +4,7 @@ import clint
 import sys
 import os
 import lucene
-from textorganizer import indexfiles, searchfiles
+from textorganizer import indexfiles, searchfiles, addmetadata
 
 class TextOrganizer:
     def __init__(self,lucenedir):
@@ -30,13 +30,28 @@ class TextOrganizer:
         else:
             add_files = False
 
+        if '-c' in grouped_args:
+            if len(grouped_args['-c']) == 1:
+                add_md = True
+            elif len(grouped_args['-c']) == 0:
+                print 'Import_metadata flag passed, but no CSV file given. Ignoring -c flag.'
+                add_md = False
+            elif len(grouped_args['-c']) > 1:
+                print 'Only one CSV file may be passed to txtorg -c. Ignoring -c flag.'
+                add_md = False
+        else:
+            add_md = False
+
+        #first, add files from a directory if -a was passed
         if add_files:
             indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
-        else:
-            self.mainprompt()
 
+        #next, update documents with metadata if -c was passed
+        if add_md:
+            self.add_metadata(grouped_args['-c'][0])
     
 
+        self.mainprompt()
 
     def mainprompt(self):
         print "Welcome message."
@@ -50,25 +65,58 @@ class TextOrganizer:
                 self.run_searcher(instr[7:])
             elif instr.startswith('export tdm'):
                 self.export_tdm()
-            elif instr.startswith('view '):
-                viewdb = view.viewdb(instr[5:],configuration['dblocation'])
-            elif instr.startswith('add '):
-            #add.process_raw_files(FILENAMES,configuration['dblocation'])
-            #need a good way to get a list of filenames from the interactive prompt
-                print '\'add\' is not yet supported from the interactive prompt. Please use \'txtorg add [filename]\' from the shell.'
+            elif instr.startswith('view fields'):
+                self.view_fields()
+            elif instr == 'h' or instr == 'help':
+                self.show_help()
             else:
                 print "Input not understood. Type 'h' or 'help' for help."
 
+    def add_metadata(self,csvfile):
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+        reader = lucene.IndexReader.open(directory, True)
+        analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+        writer = lucene.IndexWriter(directory, analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+
+        addmetadata.add_metadata_from_csv(searcher,reader,writer,csvfile)
+        writer.close()
+        
     def run_searcher(self,command):
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
         reader = lucene.IndexReader.open(directory, True)
         analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
 
-        self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, analyzer, reader, command)
+        try:
+            self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, analyzer, reader, command)
+
+        except lucene.JavaError:
+            print "Invalid query; see Lucene documentation for information on query syntax"
+            self.scoreDocs = None
+            self.allTerms = None
+            self.allDicts = None
+
+
         #Alex, you mentioned at the top of searchfiles.py that searcher.close() sometimes causes stack overflows, but it was not commented out. Did you fix this issue?
 
         searcher.close()
+
+    def view_fields(self):
+        if (self.scoreDocs is None) or (self.allTerms is None) or (self.allDicts is None):
+            print "Select documents with \"select [query]\" before exporting TDM"
+            return False
+
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+
+        for count,scoreDoc in enumerate(self.scoreDocs):
+            doc = searcher.doc(scoreDoc.doc)
+            print '\nDocument {0}:'.format(count)
+            for f in doc.getFields():
+                field = lucene.Field.cast_(f)
+                (k, v) = field.name(), field.stringValue()
+                print "{0}: {1}".format(k,v)
 
     def export_tdm(self):
         if (self.scoreDocs is None) or (self.allTerms is None) or (self.allDicts is None):
@@ -85,6 +133,25 @@ class TextOrganizer:
 
         print "Exporting TDM to ", outfile
         searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
+
+    def show_help(self):
+        print """Supported syntax: 
+
+select [lucene query]
+\tSelects all documents in the index matching query [lucene query].
+
+export tdm
+\tExports a Term Document Matrix for the selected documents.
+
+view fields
+\tPrints a list of all defined fields, and their values, for the selected documents.
+
+quit
+\tExits the program.
+
+help
+\tDisplays this dialog.
+"""
         
 if __name__ == '__main__':
     lucene.initVM()
