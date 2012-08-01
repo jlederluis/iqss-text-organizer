@@ -43,7 +43,7 @@ def add_metadata_to_doc(lucenedoc,fieldnames,values):
 
     # Now include new fields
     for idx in range(len(fieldnames)):
-        edited_doc.add(Field(fieldnames[idx],values[idx],Field.Store.YES,Field.Index.NOT_ANALYZED))
+        edited_doc.add(Field(fieldnames[idx].lower(),values[idx].lower(),Field.Store.YES,Field.Index.NOT_ANALYZED))
 
     return edited_doc
 

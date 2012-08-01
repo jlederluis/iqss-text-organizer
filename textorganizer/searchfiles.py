@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 from lucene import \
     QueryParser, IndexSearcher, StandardAnalyzer, SimpleFSDirectory, File, \
-    VERSION, initVM, Version, IndexReader
-import threading, sys, time, os, csv
+    VERSION, initVM, Version, IndexReader, TermQuery, Term
+import threading, sys, time, os, csv, re
 
 """
 This script is loosely based on the Lucene (java implementation) demo class 
@@ -28,10 +28,21 @@ class Ticker(object):
 
 def run(searcher, analyzer, reader, command):
 
-    print "Searching for:", command
-    query = QueryParser(Version.LUCENE_CURRENT, "contents",
-                        analyzer).parse(command)
+    """check to see whether the user specified a field"""
+    m = re.match(r'([a-zA-Z]+):(.*)',command)
+
+    if m is None:
+        print "Running Lucene query \"%s\"" % (command,)
+        query = QueryParser(Version.LUCENE_CURRENT, "contents",analyzer).parse(command)
+    else:
+        """make a TermQuery with the fieldname and value"""
+        fieldname = m.group(1)
+        value = m.group(2)
+        print "Searching for term \"%s\" in field \"%s\"" % (value,fieldname)
+        query = TermQuery(Term(fieldname,value))
+
     scoreDocs = searcher.search(query, reader.maxDoc()).scoreDocs
+
     print "%s total matching documents." % len(scoreDocs)
 
     allDicts = []
