@@ -27,6 +27,8 @@ From anywhere on your computer, you can run the command `txtorg -a [DIRECTORY]` 
 ### Adding metadata to files
 Once you have imported files to the database, you can add metadata to the files by running `txtorg -c [file.csv]` where `file.csv` is a file containing a list of metadata fields and values for each file. The file should be in the format of `sample_metadata_file.csv` in the root folder of this repository.
 
+Since `txtorg -c` must remove, edit, and re-add each individual document, it can take a long time to run for large corpora. If this is a problem, you can use the command `txtorg -C [file.csv]` instead of `txtorg -a [DIRECTORY]` to do the initial import. This will import each document in the CSV file, as well as the metadata contained.
+
 ### Selecting and exporting files
 
 To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from the command line. At the prompt (> ), you can choose how to subset the data and what to do with the subsetted data. Current supported commands are 'select', 'export', and 'quit'.
