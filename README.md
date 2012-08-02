@@ -34,6 +34,8 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 #### select
 
 * `select [QUERY]` --- runs lucene query QUERY on the database, and prints the number of documents selected.
+  * To search by a metadata field, use a query of the form `fieldname:value`. 
+
 
 #### export
 
