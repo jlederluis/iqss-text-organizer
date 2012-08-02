@@ -3,6 +3,7 @@ from lucene import \
     QueryParser, IndexSearcher, StandardAnalyzer, SimpleFSDirectory, File, \
     VERSION, initVM, Version, IndexReader, TermQuery, Term
 import threading, sys, time, os, csv, re
+from shutil import copy2
 
 """
 This script is loosely based on the Lucene (java implementation) demo class 
@@ -90,7 +91,23 @@ def writeTDM(allDicts,allTerms,fname):
     for d in allDicts:
         c.writerow(d)
     f.close()
+
     
+def write_files(searcher,scoreDocs,outdir):
+
+    failFlag = False
+    for scoreDoc in scoreDocs:
+        doc = searcher.doc(scoreDoc.doc)
+        path = doc.get("path").encode('utf-8')
+        try:
+            copy2(path,outdir)
+            print "Copied:",path
+        except:
+            failFlag = True
+            print "Failed:",path
+
+    if failFlag:
+        "WARNING: some files failed to copy."
 
 if __name__ == '__main__':
     STORE_DIR = "index"

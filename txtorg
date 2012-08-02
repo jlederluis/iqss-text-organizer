@@ -65,6 +65,8 @@ class TextOrganizer:
                 self.run_searcher(instr[7:])
             elif instr.startswith('export tdm'):
                 self.export_tdm()
+            elif instr.startswith('export files'):
+                self.export_files()
             elif instr.startswith('view fields'):
                 self.view_fields()
             elif instr == 'h' or instr == 'help':
@@ -121,11 +123,11 @@ class TextOrganizer:
     def export_tdm(self):
         if (self.scoreDocs is None) or (self.allTerms is None) or (self.allDicts is None):
             print "Select documents with \"select [query]\" before exporting TDM"
-            return False
+            return 
 
         print "Choose a file for export (leave blank to accept default -> ./tdm.csv)"
         outfile = './tdm.csv'
-        outfile_raw = raw_input()
+        outfile_raw = raw_input("> ")
         if outfile_raw == "":
             outfile = os.path.realpath(outfile)
         else:
@@ -134,8 +136,42 @@ class TextOrganizer:
         print "Exporting TDM to ", outfile
         searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
 
+    def export_files(self):
+        if (self.scoreDocs is None):
+            print "Select documents with \"select [query]\" before exporting TDM"
+            return 
+
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+
+        print "Choose a directory for export (leave blank to accept default -> ./export/)"
+        outdir = './export/'
+        outdir_raw = raw_input("> ")
+        if outdir_raw == "":
+            outdir = os.path.realpath(outdir)
+        else:
+            outdir = os.path.realpath(os.path.expanduser(outdir_raw))
+
+        if not os.path.isdir(outdir):
+            print "%s is not a directory; Create it now? (y, n)" % (outdir,)
+            user_choice = raw_input("> ").lower()
+            if user_choice == 'y':
+                try:
+                    os.makedirs(outdir)
+                except:
+                    print "Failed to create directory; aborting."
+                    return 
+            elif user_choice == 'n':
+                print "Aborting."
+                return    
+
+        print "Exporting files to directory", outdir
+        searchfiles.write_files(searcher,self.scoreDocs, outdir)
+
+
     def show_help(self):
-        print """Supported syntax: 
+        print """
+Supported syntax: 
 
 select [lucene query]
 \tSelects all documents in the index matching query [lucene query].
