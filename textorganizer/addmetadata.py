@@ -47,7 +47,33 @@ def add_metadata_to_doc(lucenedoc,fieldnames,values):
 
     return edited_doc
 
-def add_metadata_from_csv(searcher,reader,writer,csvfile):
+def add_new_document_with_metadata(writer,filepath,fieldnames,values):
+    file = open(filepath)
+    contents = unicode(file.read(), 'iso-8859-1')
+    file.close()
+
+    doc = Document()
+    # add name, path, and contents fields
+    doc.add(Field("name", os.path.basename(filepath),
+                         Field.Store.YES,
+                         Field.Index.NOT_ANALYZED))
+    doc.add(Field("path", os.path.realpath(filepath),
+                         Field.Store.YES,
+                         Field.Index.NOT_ANALYZED))
+    if len(contents) > 0:
+        doc.add(Field("contents", contents,
+                             Field.Store.NO,
+                             Field.Index.ANALYZED,
+                             Field.TermVector.YES))
+    else:
+        print "warning: no content in %s" % filename
+
+    for idx in range(len(fieldnames)):
+        doc.add(Field(fieldnames[idx].lower(),values[idx].lower(),Field.Store.YES,Field.Index.NOT_ANALYZED))
+
+    writer.addDocument(doc)
+
+def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
     csvreader = csv.reader(codecs.open(csvfile,encoding='UTF-8'),delimiter=',',quotechar='"')
     failed = False
 
@@ -64,19 +90,26 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile):
             print "Could not read file {0}, skipping".format(filepath)
             continue
 
+        # if passed the new_files flag, just add documents to the index without checking whether or not they exist. This speeds things up considerably.
+        if new_files:
+            print "Adding document {0}".format(filepath)
+            add_new_document_with_metadata(writer,filepath,fieldnames,line[1:])
+            continue
+
+        # otherwise, look for a document pointing to this filepath in the index. If it's there, update it; otherwise add it.
         scoreDocs = docs_from_filepath(searcher,reader,filepath)
         if len(scoreDocs) == 0:
-            print "Could not locate document {0}".format(filepath)
-            failed = True
+            print "Could not locate document {0}; adding to index.".format(filepath)
+            add_new_document_with_metadata(writer,filepath,fieldnames,line[1:])
+        else:
+            for scoreDoc in scoreDocs:
+                print "Updating document",filepath,"..."
+                old_doc = searcher.doc(scoreDoc.doc)
+                edited_doc = add_metadata_to_doc(old_doc,fieldnames,line[1:])
+                if edited_doc is None: 
+                    continue
 
-        for scoreDoc in scoreDocs:
-            print "Updating document",filepath,"..."
-            old_doc = searcher.doc(scoreDoc.doc)
-            edited_doc = add_metadata_to_doc(old_doc,fieldnames,line[1:])
-            if edited_doc is None: 
-                continue
-
-            writer.updateDocument(Term("path",filepath),edited_doc)
+                writer.updateDocument(Term("path",filepath),edited_doc)
 
     print "Optimizing index..."
     writer.optimize()

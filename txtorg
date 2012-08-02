@@ -17,7 +17,7 @@ class TextOrganizer:
         self.allDicts = None
 
     def parseargs(self,grouped_args):
-        
+
         if '-a' in grouped_args:
             if len(grouped_args['-a']) == 1:
                 add_files = True
@@ -42,11 +42,27 @@ class TextOrganizer:
         else:
             add_md = False
 
-        #first, add files from a directory if -a was passed
+        if '-C' in grouped_args:
+            if len(grouped_args['-C']) == 1:
+                add_new_md = True
+            elif len(grouped_args['-C']) == 0:
+                print 'Import new files from CSV flag passed, but no CSV file given. Ignoring -C flag.'
+                add_new_md = False
+            elif len(grouped_args['-C']) > 1:
+                print 'Only one CSV file may be passed to txtorg -C. Ignoring -C flag.'
+                add_new_md = False
+        else:
+            add_new_md = False
+
+        # first, add new files from csv if -C was passed
+        if add_new_md:
+            self.add_metadata(grouped_args['-C'][0],new_files=True)
+
+        # next, add files from a directory if -a was passed
         if add_files:
             indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
 
-        #next, update documents with metadata if -c was passed
+        # next, update documents with metadata if -c was passed
         if add_md:
             self.add_metadata(grouped_args['-c'][0])
     
@@ -74,14 +90,14 @@ class TextOrganizer:
             else:
                 print "Input not understood. Type 'h' or 'help' for help."
 
-    def add_metadata(self,csvfile):
+    def add_metadata(self,csvfile,new_files=False):
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
         reader = lucene.IndexReader.open(directory, True)
         analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
         writer = lucene.IndexWriter(directory, analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
 
-        addmetadata.add_metadata_from_csv(searcher,reader,writer,csvfile)
+        addmetadata.add_metadata_from_csv(searcher,reader,writer,csvfile,new_files)
         writer.close()
         
     def run_searcher(self,command):
@@ -93,7 +109,7 @@ class TextOrganizer:
         try:
             self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, analyzer, reader, command)
 
-        except lucene.JavaError:
+        except lucene.JavaError as e:
             print "Invalid query; see Lucene documentation for information on query syntax"
             self.scoreDocs = None
             self.allTerms = None
@@ -195,6 +211,16 @@ if __name__ == '__main__':
 
     programdir = os.path.join(os.path.dirname(__file__))
     lucenedir = os.path.join(programdir,'lucene_index')
+
+    print "index location:", lucenedir
+
+    if not os.path.exists(lucenedir):
+        os.mkdir(lucenedir)
+        analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+        writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(lucenedir)), analyzer, True, lucene.IndexWriter.MaxFieldLength.LIMITED)
+        writer.setMaxFieldLength(1048576)
+        writer.optimize()
+        writer.close()
 
     main = TextOrganizer(lucenedir)
     main.parseargs(clint.args.grouped)
