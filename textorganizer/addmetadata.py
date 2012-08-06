@@ -27,7 +27,7 @@ def add_metadata_to_doc(lucenedoc,fieldnames,values):
     # Now, add back the unstored "contents" field
     try:
         file = open(filepath)
-        contents = unicode(file.read(), 'iso-8859-1')
+        contents = unicode(file.read(), 'UTF-8')
         file.close()
 
         if len(contents) > 0:
@@ -49,7 +49,7 @@ def add_metadata_to_doc(lucenedoc,fieldnames,values):
 
 def add_new_document_with_metadata(writer,filepath,fieldnames,values):
     file = open(filepath)
-    contents = unicode(file.read(), 'iso-8859-1')
+    contents = unicode(file.read(), 'UTF-8')
     file.close()
 
     doc = Document()

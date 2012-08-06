@@ -53,7 +53,7 @@ class IndexFiles(object):
                 try:
                     path = os.path.join(root, filename)
                     file = open(path)
-                    contents = unicode(file.read(), 'iso-8859-1')
+                    contents = unicode(file.read(), 'UTF-8')
                     file.close()
                     doc = lucene.Document()
                     doc.add(lucene.Field("name", filename,
