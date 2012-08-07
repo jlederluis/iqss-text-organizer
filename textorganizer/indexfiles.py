@@ -72,17 +72,3 @@ class IndexFiles(object):
                     writer.addDocument(doc)
                 except Exception, e:
                     print "Failed in indexDocs:", e
-
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print IndexFiles.__doc__
-        sys.exit(1)
-    lucene.initVM()
-    print 'lucene', lucene.VERSION
-    start = datetime.now()
-    try:
-        IndexFiles(sys.argv[1], "index", lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
-        end = datetime.now()
-        print end - start
-    except Exception, e:
-        print "Failed: ", e

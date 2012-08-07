@@ -15,6 +15,8 @@ class TextOrganizer:
         self.allTerms = None
         #dictionary containing TDM for selected documents        
         self.allDicts = None
+        #This is the analyzer used for searching and indexing. Defaults to English
+        self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
 
     def parseargs(self,grouped_args):
 
@@ -54,13 +56,19 @@ class TextOrganizer:
         else:
             add_new_md = False
 
+        if '-l' in grouped_args:
+            if len(grouped_args['-l']) == 1 and grouped_args['-l'][0] in ['zh','en']:
+                self.change_language(grouped_args['-l'][0])
+            else:
+                print """Specify language with txtorg -l [LANGUAGE]. Valid Languages are 'en' and 'zh'."""
+
         # first, add new files from csv if -C was passed
         if add_new_md:
             self.add_metadata(grouped_args['-C'][0],new_files=True)
 
         # next, add files from a directory if -a was passed
         if add_files:
-            indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
+            indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,self.analyzer)
 
         # next, update documents with metadata if -c was passed
         if add_md:
@@ -85,17 +93,29 @@ class TextOrganizer:
                 self.export_files()
             elif instr.startswith('view fields'):
                 self.view_fields()
+            elif instr.startswith('language '):
+                self.change_language(instr[9:])
             elif instr == 'h' or instr == 'help':
                 self.show_help()
             else:
                 print "Input not understood. Type 'h' or 'help' for help."
 
+    def change_language(self,language):
+        if language == 'zh':
+            self.analyzer = lucene.SmartChineseAnalyzer(lucene.Version.LUCENE_CURRENT)
+            print "Using Chinese Analyzer"
+        elif language == 'en':
+            self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+            print "Using English Analyzer"
+        else:
+            print 'Language code "%s" not supported. Defaulting to StandardAnalyzer' % language
+            self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+
     def add_metadata(self,csvfile,new_files=False):
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
         reader = lucene.IndexReader.open(directory, True)
-        analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
-        writer = lucene.IndexWriter(directory, analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+        writer = lucene.IndexWriter(directory, self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
 
         addmetadata.add_metadata_from_csv(searcher,reader,writer,csvfile,new_files)
         writer.close()
@@ -104,10 +124,9 @@ class TextOrganizer:
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
         reader = lucene.IndexReader.open(directory, True)
-        analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
 
         try:
-            self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, analyzer, reader, command)
+            self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, self.analyzer, reader, command)
 
         except lucene.JavaError as e:
             print "Invalid query; see Lucene documentation for information on query syntax"

@@ -103,14 +103,3 @@ def write_files(searcher,scoreDocs,outdir):
 
     if failFlag:
         "WARNING: some files failed to copy."
-
-if __name__ == '__main__':
-    STORE_DIR = "index"
-    initVM()
-    print 'lucene', VERSION
-    directory = SimpleFSDirectory(File(STORE_DIR))
-    searcher = IndexSearcher(directory, True)
-    reader = IndexReader.open(directory, True)
-    analyzer = StandardAnalyzer(Version.LUCENE_CURRENT)
-    run(searcher, analyzer, reader)
-    searcher.close()

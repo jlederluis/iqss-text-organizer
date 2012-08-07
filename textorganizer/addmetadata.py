@@ -1,4 +1,4 @@
-from lucene import QueryParser, IndexSearcher, StandardAnalyzer, SimpleFSDirectory, File, VERSION, initVM, Version, IndexReader, Term, BooleanQuery, BooleanClause, TermQuery, Field, IndexWriter, Document
+from lucene import QueryParser, IndexSearcher, SimpleFSDirectory, File, VERSION, initVM, Version, IndexReader, Term, BooleanQuery, BooleanClause, TermQuery, Field, IndexWriter, Document
 import os
 import sys
 import csv
@@ -116,18 +116,3 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
 
     if failed:
         print "Could not locate index entries for some paths. Use txtorg -a [directory] to add files to index before adding metadata."
-
-if __name__ == '__main__':
-    STORE_DIR = "/home/sam/Documents/IQSS/iqss-text-organizer/lucene_index/"
-    initVM()
-    print 'lucene', VERSION
-    directory = SimpleFSDirectory(File(STORE_DIR))
-
-    searcher = IndexSearcher(directory, True)
-    reader = IndexReader.open(directory, True)
-    analyzer = StandardAnalyzer(Version.LUCENE_CURRENT)
-    writer = IndexWriter(directory, analyzer, False, IndexWriter.MaxFieldLength.LIMITED)
-
-    add_metadata_from_csv(searcher,reader,writer,sys.argv[1])
-
-    searcher.close()
