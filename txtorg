@@ -93,7 +93,7 @@ class TextOrganizer:
                 self.export_files()
             elif instr.startswith('view fields'):
                 self.view_fields()
-            elif instr.startswith('language '):
+            elif instr.startswith('language'):
                 self.change_language(instr[9:])
             elif instr == 'h' or instr == 'help':
                 self.show_help()
@@ -107,6 +107,11 @@ class TextOrganizer:
         elif language == 'en':
             self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
             print "Using English Analyzer"
+        elif language == '':
+            if isinstance(self.analyzer,lucene.StandardAnalyzer):
+                print "Using English Analyzer"
+            elif isinstance(self.analyzer,lucene.SmartChineseAnalyzer):
+                print "Using Chinese Analyzer"
         else:
             print 'Language code "%s" not supported. Defaulting to StandardAnalyzer' % language
             self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
