@@ -31,7 +31,7 @@ class IndexFiles(object):
         if not os.path.exists(storeDir):
             os.mkdir(storeDir)
         store = lucene.SimpleFSDirectory(lucene.File(storeDir))
-        writer = lucene.IndexWriter(store, analyzer, True,
+        writer = lucene.IndexWriter(store, analyzer, False,
                                     lucene.IndexWriter.MaxFieldLength.LIMITED)
         writer.setMaxFieldLength(1048576)
         print 'document dir is', root
@@ -53,7 +53,7 @@ class IndexFiles(object):
                 try:
                     path = os.path.join(root, filename)
                     file = open(path)
-                    contents = unicode(file.read(), 'iso-8859-1')
+                    contents = unicode(file.read(), 'UTF-8')
                     file.close()
                     doc = lucene.Document()
                     doc.add(lucene.Field("name", filename,
@@ -72,17 +72,3 @@ class IndexFiles(object):
                     writer.addDocument(doc)
                 except Exception, e:
                     print "Failed in indexDocs:", e
-
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print IndexFiles.__doc__
-        sys.exit(1)
-    lucene.initVM()
-    print 'lucene', lucene.VERSION
-    start = datetime.now()
-    try:
-        IndexFiles(sys.argv[1], "index", lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
-        end = datetime.now()
-        print end - start
-    except Exception, e:
-        print "Failed: ", e

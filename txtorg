@@ -4,7 +4,7 @@ import clint
 import sys
 import os
 import lucene
-from textorganizer import indexfiles, searchfiles
+from textorganizer import indexfiles, searchfiles, addmetadata
 
 class TextOrganizer:
     def __init__(self,lucenedir):
@@ -15,9 +15,11 @@ class TextOrganizer:
         self.allTerms = None
         #dictionary containing TDM for selected documents        
         self.allDicts = None
+        #This is the analyzer used for searching and indexing. Defaults to English
+        self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
 
     def parseargs(self,grouped_args):
-        
+
         if '-a' in grouped_args:
             if len(grouped_args['-a']) == 1:
                 add_files = True
@@ -30,16 +32,53 @@ class TextOrganizer:
         else:
             add_files = False
 
-        if add_files:
-            indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
+        if '-c' in grouped_args:
+            if len(grouped_args['-c']) == 1:
+                add_md = True
+            elif len(grouped_args['-c']) == 0:
+                print 'Import_metadata flag passed, but no CSV file given. Ignoring -c flag.'
+                add_md = False
+            elif len(grouped_args['-c']) > 1:
+                print 'Only one CSV file may be passed to txtorg -c. Ignoring -c flag.'
+                add_md = False
         else:
-            self.mainprompt()
+            add_md = False
 
+        if '-C' in grouped_args:
+            if len(grouped_args['-C']) == 1:
+                add_new_md = True
+            elif len(grouped_args['-C']) == 0:
+                print 'Import new files from CSV flag passed, but no CSV file given. Ignoring -C flag.'
+                add_new_md = False
+            elif len(grouped_args['-C']) > 1:
+                print 'Only one CSV file may be passed to txtorg -C. Ignoring -C flag.'
+                add_new_md = False
+        else:
+            add_new_md = False
+
+        if '-l' in grouped_args:
+            if len(grouped_args['-l']) == 1 and grouped_args['-l'][0] in ['zh','en']:
+                self.change_language(grouped_args['-l'][0])
+            else:
+                print """Specify language with txtorg -l [LANGUAGE]. Valid Languages are 'en' and 'zh'."""
+
+        # first, add new files from csv if -C was passed
+        if add_new_md:
+            self.add_metadata(grouped_args['-C'][0],new_files=True)
+
+        # next, add files from a directory if -a was passed
+        if add_files:
+            indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,self.analyzer)
+
+        # next, update documents with metadata if -c was passed
+        if add_md:
+            self.add_metadata(grouped_args['-c'][0])
     
 
+        self.mainprompt()
 
     def mainprompt(self):
-        print "Welcome message."
+        print "Entering interactive mode. Type 'h' or 'help' for supported syntax."
         while True:
         #present user with a prompt, grab input, and convert to lowercase
             instr=raw_input("> ").lower()
@@ -50,34 +89,85 @@ class TextOrganizer:
                 self.run_searcher(instr[7:])
             elif instr.startswith('export tdm'):
                 self.export_tdm()
-            elif instr.startswith('view '):
-                viewdb = view.viewdb(instr[5:],configuration['dblocation'])
-            elif instr.startswith('add '):
-            #add.process_raw_files(FILENAMES,configuration['dblocation'])
-            #need a good way to get a list of filenames from the interactive prompt
-                print '\'add\' is not yet supported from the interactive prompt. Please use \'txtorg add [filename]\' from the shell.'
+            elif instr.startswith('export files'):
+                self.export_files()
+            elif instr.startswith('view fields'):
+                self.view_fields()
+            elif instr.startswith('language'):
+                self.change_language(instr[9:])
+            elif instr == 'h' or instr == 'help':
+                self.show_help()
             else:
                 print "Input not understood. Type 'h' or 'help' for help."
 
+    def change_language(self,language):
+        if language == 'zh':
+            self.analyzer = lucene.SmartChineseAnalyzer(lucene.Version.LUCENE_CURRENT)
+            print "Using Chinese Analyzer"
+        elif language == 'en':
+            self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+            print "Using English Analyzer"
+        elif language == '':
+            if isinstance(self.analyzer,lucene.StandardAnalyzer):
+                print "Using English Analyzer"
+            elif isinstance(self.analyzer,lucene.SmartChineseAnalyzer):
+                print "Using Chinese Analyzer"
+        else:
+            print 'Language code "%s" not supported. Defaulting to StandardAnalyzer' % language
+            self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+
+    def add_metadata(self,csvfile,new_files=False):
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+        reader = lucene.IndexReader.open(directory, True)
+        writer = lucene.IndexWriter(directory, self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+
+        addmetadata.add_metadata_from_csv(searcher,reader,writer,csvfile,new_files)
+        writer.close()
+        
     def run_searcher(self,command):
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
         reader = lucene.IndexReader.open(directory, True)
-        analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
 
-        self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, analyzer, reader, command)
+        try:
+            self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, self.analyzer, reader, command)
+
+        except lucene.JavaError as e:
+            print "Invalid query; see Lucene documentation for information on query syntax"
+            self.scoreDocs = None
+            self.allTerms = None
+            self.allDicts = None
+
+
         #Alex, you mentioned at the top of searchfiles.py that searcher.close() sometimes causes stack overflows, but it was not commented out. Did you fix this issue?
 
         searcher.close()
 
-    def export_tdm(self):
+    def view_fields(self):
         if (self.scoreDocs is None) or (self.allTerms is None) or (self.allDicts is None):
             print "Select documents with \"select [query]\" before exporting TDM"
             return False
 
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+
+        for count,scoreDoc in enumerate(self.scoreDocs):
+            doc = searcher.doc(scoreDoc.doc)
+            print '\nDocument {0}:'.format(count)
+            for f in doc.getFields():
+                field = lucene.Field.cast_(f)
+                (k, v) = field.name(), field.stringValue()
+                print "{0}: {1}".format(k,v)
+
+    def export_tdm(self):
+        if (self.scoreDocs is None) or (self.allTerms is None) or (self.allDicts is None):
+            print "Select documents with \"select [query]\" before exporting TDM"
+            return 
+
         print "Choose a file for export (leave blank to accept default -> ./tdm.csv)"
         outfile = './tdm.csv'
-        outfile_raw = raw_input()
+        outfile_raw = raw_input("> ")
         if outfile_raw == "":
             outfile = os.path.realpath(outfile)
         else:
@@ -85,6 +175,59 @@ class TextOrganizer:
 
         print "Exporting TDM to ", outfile
         searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
+
+    def export_files(self):
+        if (self.scoreDocs is None):
+            print "Select documents with \"select [query]\" before exporting TDM"
+            return 
+
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+
+        print "Choose a directory for export (leave blank to accept default -> ./export/)"
+        outdir = './export/'
+        outdir_raw = raw_input("> ")
+        if outdir_raw == "":
+            outdir = os.path.realpath(outdir)
+        else:
+            outdir = os.path.realpath(os.path.expanduser(outdir_raw))
+
+        if not os.path.isdir(outdir):
+            print "%s is not a directory; Create it now? (y, n)" % (outdir,)
+            user_choice = raw_input("> ").lower()
+            if user_choice == 'y':
+                try:
+                    os.makedirs(outdir)
+                except:
+                    print "Failed to create directory; aborting."
+                    return 
+            elif user_choice == 'n':
+                print "Aborting."
+                return    
+
+        print "Exporting files to directory", outdir
+        searchfiles.write_files(searcher,self.scoreDocs, outdir)
+
+
+    def show_help(self):
+        print """
+Supported syntax: 
+
+select [lucene query]
+\tSelects all documents in the index matching query [lucene query].
+
+export tdm
+\tExports a Term Document Matrix for the selected documents.
+
+view fields
+\tPrints a list of all defined fields, and their values, for the selected documents.
+
+quit
+\tExits the program.
+
+help
+\tDisplays this dialog.
+"""
         
 if __name__ == '__main__':
     lucene.initVM()
@@ -92,6 +235,16 @@ if __name__ == '__main__':
 
     programdir = os.path.join(os.path.dirname(__file__))
     lucenedir = os.path.join(programdir,'lucene_index')
+
+    print "index location:", lucenedir
+
+    if not os.path.exists(lucenedir):
+        os.mkdir(lucenedir)
+        analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+        writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(lucenedir)), analyzer, True, lucene.IndexWriter.MaxFieldLength.LIMITED)
+        writer.setMaxFieldLength(1048576)
+        writer.optimize()
+        writer.close()
 
     main = TextOrganizer(lucenedir)
     main.parseargs(clint.args.grouped)
