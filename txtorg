@@ -91,6 +91,8 @@ class TextOrganizer:
                 self.export_tdm()
             elif instr.startswith('export files'):
                 self.export_files()
+            elif instr.startswith('export metadata'):
+                self.export_metadata()
             elif instr.startswith('view fields'):
                 self.view_fields()
             elif instr.startswith('language'):
@@ -176,16 +178,10 @@ class TextOrganizer:
         print "Exporting TDM to ", outfile
         searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
 
-    def export_files(self):
-        if (self.scoreDocs is None):
-            print "Select documents with \"select [query]\" before exporting TDM"
-            return 
+    def choose_or_create_dir(self,default):
 
-        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
-        searcher = lucene.IndexSearcher(directory, True)
-
-        print "Choose a directory for export (leave blank to accept default -> ./export/)"
-        outdir = './export/'
+        print "Choose a directory for export (leave blank to accept default -> %s)" % (default,)
+        outdir = default
         outdir_raw = raw_input("> ")
         if outdir_raw == "":
             outdir = os.path.realpath(outdir)
@@ -200,13 +196,44 @@ class TextOrganizer:
                     os.makedirs(outdir)
                 except:
                     print "Failed to create directory; aborting."
-                    return 
+                    return None
             elif user_choice == 'n':
                 print "Aborting."
-                return    
+                return None
+
+        return outdir
+
+    def export_files(self):
+        if (self.scoreDocs is None):
+            print "Select documents with \"select [query]\" before exporting TDM"
+            return 
+
+
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+        
+        outdir = self.choose_or_create_dir('./export/')
+        if outdir is None: return
 
         print "Exporting files to directory", outdir
         searchfiles.write_files(searcher,self.scoreDocs, outdir)
+
+
+    def export_metadata(self):
+        if (self.scoreDocs is None):
+            print "Select documents with \"select [query]\" before exporting metadata"
+            return 
+
+        directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
+        searcher = lucene.IndexSearcher(directory, True)
+        
+        outdir = self.choose_or_create_dir('./export/')
+        if outdir is None: return
+
+        print "Exporting files to directory", outdir
+        searchfiles.write_metadata(searcher,self.scoreDocs, outdir)
+
+
 
 
     def show_help(self):
