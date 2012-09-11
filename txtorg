@@ -254,6 +254,12 @@ select [lucene query]
 export tdm
 \tExports a Term Document Matrix for the selected documents.
 
+export files
+\tCopies all selected files to a directory.
+
+analyzer
+\tPrints active analyzer and lets you choose a new one.
+
 view fields
 \tPrints a list of all defined fields, and their values, for the selected documents.
 
