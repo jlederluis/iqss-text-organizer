@@ -4,11 +4,13 @@ import clint
 import sys
 import os
 import lucene
-from textorganizer import indexfiles, searchfiles, addmetadata
+from textorganizer import indexfiles, searchfiles, addmetadata, stemmingtools
 
 class TextOrganizer:
-    def __init__(self,lucenedir):
+    def __init__(self,lucenedir,programdir=None):
         self.lucenedir = lucenedir
+        # if no program dir is supplied, default to home directory
+        self.programdir = programdir if programdir is not None else os.path.expanduser("~") 
         #lucene object containing selected documents
         self.scoreDocs = None
         #list of all terms in selected documents
@@ -16,8 +18,13 @@ class TextOrganizer:
         #dictionary containing TDM for selected documents        
         self.allDicts = None
         #This is the analyzer used for searching and indexing. Defaults to English
-        self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
 
+        self.analyzers = {'StandardAnalyzer': lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT),
+            'SmartChineseAnalyzer': lucene.SmartChineseAnalyzer(lucene.Version.LUCENE_CURRENT),
+            'PorterStemmerAnalyzer': stemmingtools.init_PSA(os.path.join(self.programdir,"phrases.txt"))}
+        self.active_analyzer = 'StandardAnalyzer'
+
+    
     def parseargs(self,grouped_args):
 
         if '-a' in grouped_args:
@@ -56,11 +63,8 @@ class TextOrganizer:
         else:
             add_new_md = False
 
-        if '-l' in grouped_args:
-            if len(grouped_args['-l']) == 1 and grouped_args['-l'][0] in ['zh','en']:
-                self.change_language(grouped_args['-l'][0])
-            else:
-                print """Specify language with txtorg -l [LANGUAGE]. Valid Languages are 'en' and 'zh'."""
+        if '-n' in grouped_args:
+            self.active_analyzer = self.change_analyzer()
 
         # first, add new files from csv if -C was passed
         if add_new_md:
@@ -68,7 +72,7 @@ class TextOrganizer:
 
         # next, add files from a directory if -a was passed
         if add_files:
-            indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,self.analyzer)
+            indexfiles.IndexFiles(grouped_args['-a'][0],self.lucenedir,self.analyzers[self.active_analyzer])
 
         # next, update documents with metadata if -c was passed
         if add_md:
@@ -95,34 +99,38 @@ class TextOrganizer:
                 self.export_metadata()
             elif instr.startswith('view fields'):
                 self.view_fields()
-            elif instr.startswith('language'):
-                self.change_language(instr[9:])
+            elif instr.startswith('analyzer'):
+                self.active_analyzer = self.change_analyzer(instr[9:])
             elif instr == 'h' or instr == 'help':
                 self.show_help()
             else:
                 print "Input not understood. Type 'h' or 'help' for help."
 
-    def change_language(self,language):
-        if language == 'zh':
-            self.analyzer = lucene.SmartChineseAnalyzer(lucene.Version.LUCENE_CURRENT)
-            print "Using Chinese Analyzer"
-        elif language == 'en':
-            self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
-            print "Using English Analyzer"
-        elif language == '':
-            if isinstance(self.analyzer,lucene.StandardAnalyzer):
-                print "Using English Analyzer"
-            elif isinstance(self.analyzer,lucene.SmartChineseAnalyzer):
-                print "Using Chinese Analyzer"
+    def change_analyzer(self,analyzer=None):
+        if analyzer is None or analyzer not in self.analyzers.keys():
+            print """Available Analyzers:"""
+            for idx,analyzer_str in enumerate(self.analyzers.keys()):
+                print "%s) %s" % (str(idx+1),analyzer_str)
+
+            print "Choose which analyzer to use (e.g. type 1 for %s), or leave blank to keep current analyzer (%s)" % (self.analyzers.keys()[0], self.active_analyzer,)
+            choice = raw_input('> ')
         else:
-            print 'Language code "%s" not supported. Defaulting to StandardAnalyzer' % language
-            self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+            choice = analyzer
+
+        if choice == '': return self.active_analyzer
+
+        try:
+            return self.analyzers.keys()[int(choice)-1]
+        except (IndexError, ValueError,):
+            print "Could not understand input. Defaulting to %s." % (self.analyzers.keys()[0],)
+            return self.analyzers.keys()[0]
+
 
     def add_metadata(self,csvfile,new_files=False):
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
         reader = lucene.IndexReader.open(directory, True)
-        writer = lucene.IndexWriter(directory, self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+        writer = lucene.IndexWriter(directory, self.analyzers[self.active_analyzer], False, lucene.IndexWriter.MaxFieldLength.LIMITED)
 
         addmetadata.add_metadata_from_csv(searcher,reader,writer,csvfile,new_files)
         writer.close()
@@ -133,7 +141,7 @@ class TextOrganizer:
         reader = lucene.IndexReader.open(directory, True)
 
         try:
-            self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, self.analyzer, reader, command)
+            self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, self.analyzers[self.active_analyzer], reader, command)
 
         except lucene.JavaError as e:
             print "Invalid query; see Lucene documentation for information on query syntax"
@@ -273,5 +281,5 @@ if __name__ == '__main__':
         writer.optimize()
         writer.close()
 
-    main = TextOrganizer(lucenedir)
+    main = TextOrganizer(lucenedir,programdir=programdir)
     main.parseargs(clint.args.grouped)

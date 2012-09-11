@@ -1,3 +1,7 @@
+from lucene import *
+import codecs
+from analyzerutils import AnalyzerUtils
+
 class PhraseFilter(PythonTokenFilter):
     '''
     PhraseFilter is a TokenFilter that adds in phrases (as tokens) that match
@@ -38,15 +42,13 @@ class PhraseFilter(PythonTokenFilter):
         for phrase in self.allPhrases:
             addPhrase = False
             lag0 = self.termAttr.term()
-            print "checking: ", self.termAttr.term()
-            print phrase
+            # print "checking: ", self.termAttr.term()
+            # print phrase
             if len(phrase)==2:
                 if self.lag1==phrase[1] and lag0==phrase[0]:
-                    print "matched!"
                     addPhrase = True
             if len(phrase)==3:
                 if self.lag2==phrase[2] and self.lag1==phrase[1] and lag0==phrase[0]:
-                    print "matched!"
                     addPhrase = True
             if addPhrase:
                 rPhrase = phrase
@@ -56,14 +58,14 @@ class PhraseFilter(PythonTokenFilter):
         self.lag2 = self.lag1
         self.lag1 = self.termAttr.term()
         
-        print "lag1: ", self.lag1
-        print "lag2: ", self.lag2
+        # print "lag1: ", self.lag1
+        # print "lag2: ", self.lag2
 
         return True
 
     def addPhrase(self,arg):
 
-        print "adding phrase", arg
+        # print "adding phrase", arg
         current = self.captureState()
 
         self.save.restoreState(current)
@@ -128,3 +130,25 @@ def stemPhrases(allPhrases,analyzer):
         stemmedPhrases.append(stemmedPhrase)
 
     return stemmedPhrases
+
+
+def init_PSA(phrasefile):
+
+    print "Reading phrase definitions from %s..." % (phrasefile,)
+    all_phrases = []
+    try:
+        with codecs.open(phrasefile,'r',encoding='UTF-8') as inf:
+            for line in inf:
+                all_phrases.append(line.strip())
+    except:
+        print "Failed. Disabling PhraseFilter"
+
+    stemmedPhrases = stemPhrases(all_phrases,QueryAnalyzer)
+
+    psa = PorterStemmerAnalyzer(Version.LUCENE_CURRENT)
+    psa.setPhrases(stemmedPhrases)
+    return psa
+
+
+if __name__ == '__main__':
+    print stemPhrases(['test phrase','another test'],QueryAnalyzer)

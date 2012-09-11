@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from lucene import \
-    QueryParser, IndexSearcher, StandardAnalyzer, SimpleFSDirectory, File, \
+    QueryParser, IndexSearcher, SimpleFSDirectory, File, \
     VERSION, initVM, Version, IndexReader, TermQuery, Term, Field
 import threading, sys, time, os, csv, re
 from shutil import copy2
