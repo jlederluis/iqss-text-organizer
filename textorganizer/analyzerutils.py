@@ -1,3 +1,5 @@
+from lucene import *
+
 class AnalyzerUtils(object):
     '''
     Stolen from LuceneInAction.

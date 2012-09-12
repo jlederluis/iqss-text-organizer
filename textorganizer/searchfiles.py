@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from lucene import \
-    QueryParser, IndexSearcher, StandardAnalyzer, SimpleFSDirectory, File, \
-    VERSION, initVM, Version, IndexReader, TermQuery, Term
+    QueryParser, IndexSearcher, SimpleFSDirectory, File, \
+    VERSION, initVM, Version, IndexReader, TermQuery, Term, Field
 import threading, sys, time, os, csv, re
 from shutil import copy2
 
@@ -88,9 +88,29 @@ def writeTDM(allDicts,allTerms,fname):
     f.close()
 
     
+def write_metadata(searcher,scoreDocs,fname):
+    allFields = set([])
+    docFields = []
+
+    for scoreDoc in scoreDocs:
+        doc = searcher.doc(scoreDoc.doc)
+
+        df = {}
+        for f in doc.getFields():
+            field = Field.cast_(f)
+            df[field.name()] = field.stringValue()
+        docFields.append(df)
+        allFields = allFields.union(set(df.keys()))
+
+    print docFields, allFields
+
+
+
+
 def write_files(searcher,scoreDocs,outdir):
 
     failFlag = False
+
     for scoreDoc in scoreDocs:
         doc = searcher.doc(scoreDoc.doc)
         path = doc.get("path").encode('utf-8')

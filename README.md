@@ -29,9 +29,19 @@ Once you have imported files to the database, you can add metadata to the files 
 
 Since `txtorg -c` must remove, edit, and re-add each individual document, it can take a long time to run for large corpora. If this is a problem, you can use the command `txtorg -C [file.csv]` instead of `txtorg -a [DIRECTORY]` to do the initial import. This will import each document in the CSV file, as well as the metadata contained.
 
+### Custom Analyzers
+Adding files with the command `txtorg -a` or `txtorg -C` will index the documents using the default analyzer. This analyzer is appropriate only for English text, recognizes only one-word tokens, and does not perform any stemming. Various other analyzers are available that allow indexing documents in other languages, or that perform various processing steps like stemming. To import documents using an analyzer other than the default, use the `-n` switch when importing. For instance, `txtorg -n -a .` imports all documents in the current working directory, but it allows the user to choose which analyzer Lucene will use for indexing. Currently available analyzers include:
+
+* StandardAnalyzer (default)
+* SmartChineseAnalyzer (use for Chinese text)
+* PorterStemmerAnalyzer
+  * This analyzer includes all n-grams (phrases) listed in the file `phrases.txt` as tokens for indexing and TDM export. For instance, if `phrases.txt` included the line `Barack Obama`, then exported TDMs would contain a column for `Barack Obama`. Using the default analyzer, this would be split over two columns: `Barack` and `Obama`. To enable this functionality, place the file `phrases.txt`, containing one entry per line, in the same directory as the `txtorg` executable.
+  * This analyzer also performs a Porter Stemming algorithm on all documents so that, for example, the words `document` and `documents` are counted as the same term in the TDM.
+
+
 ### Selecting and exporting files
 
-To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from the command line. At the prompt (> ), you can choose how to subset the data and what to do with the subsetted data. Current supported commands are 'select', 'export', and 'quit'.
+To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from the command line. At the prompt (> ), you can choose how to subset the data and what to do with the subsetted data. Current supported commands are `select`, `export`, `view`, `analyzer`, and `quit`.
 
 #### select
 
@@ -47,3 +57,7 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 #### view
 
 * `view fields` --- prints the names and values of all defined metadata fields for each of the selected documents.
+
+#### analyzer
+
+* `analyzer` --- prints a list of all available analyzers and allows the user to choose one for use in searching/exporting.
