@@ -52,7 +52,7 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 #### export
 
 * `export files` --- exports the full text of all selected documents to a directory.
-* `export tdm` --- exports a term-document matrix for all selected documents to a file. The exported file is a CSV file where the columns are terms and the rows are files.
+* `export tdm` --- exports a term-document matrix for all selected documents. This command creates two files; one containing the TDM in the format `filepath, name, number of terms, term_id1: count1, [term_id2: count2], [...]`, and the other containing the vocabulary of all selected documents in the format `term_id, term`.
 
 #### view
 
