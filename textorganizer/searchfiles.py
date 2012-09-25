@@ -2,7 +2,7 @@
 from lucene import \
     QueryParser, IndexSearcher, SimpleFSDirectory, File, \
     VERSION, initVM, Version, IndexReader, TermQuery, Term, Field
-import threading, sys, time, os, csv, re
+import threading, sys, time, os, csv, re, codecs
 from shutil import copy2
 
 """
@@ -86,6 +86,41 @@ def writeTDM(allDicts,allTerms,fname):
     for d in allDicts:
         c.writerow(d)
     f.close()
+
+def write_CTM_TDM(allDicts,allTerms,fname):
+    l = list(allTerms)
+    l.sort()
+    
+    termid_dict = {}
+    for termid,term in enumerate(l):
+        termid_dict[term] = termid
+
+    # create a filename for the vocab output: tdm.csv -> tdm_vocab.csv
+    split_filename_match = re.search(r'(.*)(\.[a-z0-9]+)$',fname)
+    vocab_filename = split_filename_match.group(1) + '_vocab' + split_filename_match.group(2)
+
+    print 'Writing vocabulary list...'
+    # writes vocab list in format 'termid, term'
+    vocab_lines = [str(termid_dict[term]) + ',' + term for term in l]
+    vocab_output = '\n'.join(['term_id,term'] + vocab_lines)
+    with codecs.open(vocab_filename, 'w', encoding='UTF-8') as outf:
+        outf.write(vocab_output)
+
+    print 'Writing TDM...'
+    # writes TDM in format 'filepath, name, numterms, termid1: termcount1, [termid2:termcount2], [...]'
+    tdm_output = []
+    for document_dict in allDicts:
+        numterms = len(document_dict) - 2
+        name = document_dict['___name___']
+        path = document_dict['___path___']
+        terms = [str(termid_dict[k]) + ':' + str(document_dict[k]) for k in document_dict.keys() if k not in ['___name___', '___path___']]
+        tdm_output.append(','.join([name,path,str(numterms)] + terms))
+    with codecs.open(fname, 'w', encoding='UTF-8') as outf:
+        outf.write('\n'.join(tdm_output))
+
+
+
+
 
     
 def write_metadata(searcher,scoreDocs,fname):

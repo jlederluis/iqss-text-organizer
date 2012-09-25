@@ -184,7 +184,8 @@ class TextOrganizer:
             outfile = os.path.realpath(os.path.expanduser(outfile_raw))
 
         print "Exporting TDM to ", outfile
-        searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
+        # searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
+        searchfiles.write_CTM_TDM(self.allDicts, self.allTerms, outfile)
 
     def choose_or_create_dir(self,default):
 
