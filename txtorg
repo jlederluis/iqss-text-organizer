@@ -19,9 +19,20 @@ class TextOrganizer:
         self.allDicts = None
         #This is the analyzer used for searching and indexing. Defaults to English
 
-        self.analyzers = {'StandardAnalyzer': lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT),
-            'SmartChineseAnalyzer': lucene.SmartChineseAnalyzer(lucene.Version.LUCENE_CURRENT),
-            'PorterStemmerAnalyzer': stemmingtools.init_PSA(os.path.join(self.programdir,"phrases.txt"))}
+        self.analyzers = {}
+
+        self.analyzers['StandardAnalyzer'] = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+
+        try:
+            self.analyzers['SmartChineseAnalyzer'] = lucene.SmartChineseAnalyzer(lucene.Version.LUCENE_CURRENT)
+        except:
+            print "SmartChineseAnalyzer not found"
+
+        try:
+            self.analyzers['PorterStemmerAnalyzer'] = stemmingtools.init_PSA(os.path.join(self.programdir,"phrases.txt"))
+        except:
+            print "PorterStemmerAnalyzer not found."            
+
         self.active_analyzer = 'StandardAnalyzer'
 
     
