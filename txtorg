@@ -345,6 +345,9 @@ export files
 analyzer
 \tPrints active analyzer and lets you choose a new one.
 
+index
+\tPrints a list of available Lucene indices and lets you choose or create one.
+
 view fields
 \tPrints a list of all defined fields, and their values, for the selected documents.
 
