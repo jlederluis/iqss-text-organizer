@@ -1,9 +1,7 @@
 iqss-text-organizer
 ===================
 
-A simple python-based command line tool designed to make organizing data for textual analysis easy and scalable. Creates
-an Apache Lucene index to which documents can be added. The user can select documents using Lucene queries. Selected 
-documents can be exported in their original format or as a term-document matrix.
+A simple python-based command line tool designed to make organizing data for textual analysis easy and scalable. Creates an Apache Lucene index to which documents can be added. The user can select documents using Lucene queries. Selected documents can be exported in their original format or as a term-document matrix.
 
 SETUP
 ----------
@@ -61,3 +59,7 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 #### analyzer
 
 * `analyzer` --- prints a list of all available analyzers and allows the user to choose one for use in searching/exporting.
+
+#### index
+
+* `index` --- prints a list of all available Lucene indices and allows the user to choose one for use. This index remains active until the user changes it again (so adding files with `txtorg -a` or `txtorg -C` will add them to the selected Lucene index). Also provides the option to create and use a new Lucene index.

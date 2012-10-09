@@ -102,7 +102,7 @@ class TextOrganizer:
                 self.view_fields()
             elif instr.startswith('analyzer'):
                 self.active_analyzer = self.change_analyzer(instr[9:])
-            elif instr.startswith('change index'):
+            elif instr.startswith('index'):
                 self.change_index()
             elif instr == 'h' or instr == 'help':
                 self.show_help()
