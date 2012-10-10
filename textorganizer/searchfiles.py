@@ -28,7 +28,6 @@ def run(searcher, analyzer, reader, command):
     m = re.match(r'([a-zA-Z]+):(.*)',command)
 
     if m is None:
-        print "Running Lucene query \"%s\"" % (command,)
         query = QueryParser(Version.LUCENE_CURRENT, "contents",analyzer).parse(command)
     else:
         """make a TermQuery with the fieldname and value"""
@@ -39,19 +38,16 @@ def run(searcher, analyzer, reader, command):
 
     scoreDocs = searcher.search(query, reader.maxDoc()).scoreDocs
 
-    print "%s total matching documents." % len(scoreDocs)
+
 
     allDicts = []
     allTerms = set()
 
-    print "building unique terms"
-    ticker = Ticker()
-    threading.Thread(target=ticker.run).start()
     for scoreDoc in scoreDocs:
         doc = searcher.doc(scoreDoc.doc)
         vector = reader.getTermFreqVector(scoreDoc.doc,"contents")
         if vector is None: continue
-        #print 'path:', doc.get("path"), 'name:', doc.get("name")
+        
         d = dict()
         allTerms = allTerms.union(map(lambda x: x.encode('utf-8'),vector.getTerms()))
         for (t,num) in zip(vector.getTerms(),vector.getTermFrequencies()):
@@ -60,15 +56,9 @@ def run(searcher, analyzer, reader, command):
         d["___name___"] = doc.get("name").encode('utf-8')
         allDicts.append(d)
     names = set(allTerms)
-    ticker.tick = False
-    print "\n%s total unique terms." % len(allTerms)
+    
 
     return scoreDocs, allTerms, allDicts
-
-    # print "Ready to write TDM."
-    # l = list(allTerms)
-    # l.sort()
-    # writeTDM(allDicts,['___name___','___path___']+l,'tdm.csv')
 
 def writeTDM(allDicts,allTerms,fname):
     l = list(allTerms)

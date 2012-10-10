@@ -115,6 +115,8 @@ class TextOrganizer:
                 self.active_analyzer = self.change_analyzer(instr[9:])
             elif instr.startswith('index'):
                 self.change_index()
+            elif instr.startswith('clear'):
+                self.clear_selections()
             elif instr == 'h' or instr == 'help':
                 self.show_help()
             else:
@@ -230,8 +232,21 @@ class TextOrganizer:
         reader = lucene.IndexReader.open(directory, True)
 
         try:
-            self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, self.analyzers[self.active_analyzer], reader, command)
+            print "Running Lucene query \"%s\"" % (command,)
+            new_scoreDocs, new_allTerms, new_allDicts = searchfiles.run(searcher, self.analyzers[self.active_analyzer], reader, command)
 
+            if self.scoreDocs is None or self.allTerms is None or self.allDicts is None:
+                self.scoreDocs, self.allTerms, self.allDicts = new_scoreDocs, new_allTerms, new_allDicts
+            else:
+                # intersect active search with this one
+                print 'Searching within previous selection. To clear your selections, type "clear"'
+                new_scoredoc_ids = [d.doc for d in new_scoreDocs]
+                intersected_scoredoc_indices = [i for i in range(len(self.scoreDocs)) if self.scoreDocs[i].doc in new_scoredoc_ids]
+
+                self.scoreDocs = [self.scoreDocs[i] for i in intersected_scoredoc_indices]
+                self.allTerms = set(self.allTerms).intersection(new_allTerms)
+                self.allDicts = [self.allDicts[i] for i in intersected_scoredoc_indices]
+                
         except lucene.JavaError as e:
             if 'ParseException' in str(e):
                 print "Invalid query; see Lucene documentation for information on query syntax"
@@ -240,14 +255,16 @@ class TextOrganizer:
             else:
                 raise e
 
-            self.scoreDocs = None
-            self.allTerms = None
-            self.allDicts = None
-
-
-        #Alex, you mentioned at the top of searchfiles.py that searcher.close() sometimes causes stack overflows, but it was not commented out. Did you fix this issue?
-
+        print "%s total matching documents." % len(self.scoreDocs)
+        print "%s total unique terms." % len(self.allTerms)
         searcher.close()
+
+    def clear_selections(self):
+        print "Selections cleared."
+        self.scoreDocs = None
+        self.allTerms = None
+        self.allDicts = None
+
 
     def view_fields(self):
         if (self.scoreDocs is None) or (self.allTerms is None) or (self.allDicts is None):
