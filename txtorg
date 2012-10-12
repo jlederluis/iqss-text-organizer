@@ -287,7 +287,7 @@ class TextOrganizer:
             print "Select documents with \"select [query]\" before exporting TDM"
             return 
 
-        print "Choose a file for export (leave blank to accept default -> ./tdm.csv)"
+        print "Choose a file for export (leave blank to accept default -> ./tdm.txt)"
         outfile = './tdm.csv'
         outfile_raw = raw_input("> ")
         if outfile_raw == "":
@@ -297,7 +297,7 @@ class TextOrganizer:
 
         print "Exporting TDM to ", outfile
         # searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
-        searchfiles.write_CTM_TDM(self.allDicts, self.allTerms, outfile)
+        searchfiles.write_CTM_TDM(self.scoreDocs, self.allDicts, self.allTerms, self.lucenedir, outfile)
 
     def choose_or_create_dir(self,default):
 
@@ -348,11 +348,16 @@ class TextOrganizer:
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
         
-        outdir = self.choose_or_create_dir('./export/')
-        if outdir is None: return
+        print "Choose a file for export (leave blank to accept default -> ./metadata.csv)"
+        outfile = './metadata.csv'
+        outfile_raw = raw_input("> ")
+        if outfile_raw == "":
+            outfile = os.path.realpath(outfile)
+        else:
+            outfile = os.path.realpath(os.path.expanduser(outfile_raw))
 
-        print "Exporting files to directory", outdir
-        searchfiles.write_metadata(searcher,self.scoreDocs, outdir)
+        print "Exporting files to directory", outfile
+        searchfiles.write_metadata(searcher,self.scoreDocs, outfile)
 
 
 

@@ -77,7 +77,7 @@ def writeTDM(allDicts,allTerms,fname):
         c.writerow(d)
     f.close()
 
-def write_CTM_TDM(allDicts,allTerms,fname):
+def write_CTM_TDM(scoreDocs, allDicts, allTerms, lucenedir, fname):
     l = list(allTerms)
     l.sort()
     
@@ -88,6 +88,7 @@ def write_CTM_TDM(allDicts,allTerms,fname):
     # create a filename for the vocab output: tdm.csv -> tdm_vocab.csv
     split_filename_match = re.search(r'(.*)(\.[a-z0-9]+)$',fname)
     vocab_filename = split_filename_match.group(1) + '_vocab' + split_filename_match.group(2)
+    md_filename = split_filename_match.group(1) + '_metadata' + split_filename_match.group(2)
 
     print 'Writing vocabulary list...'
     # writes vocab list in format 'termid, term'
@@ -108,9 +109,11 @@ def write_CTM_TDM(allDicts,allTerms,fname):
     with codecs.open(fname, 'w', encoding='UTF-8') as outf:
         outf.write('\n'.join(tdm_output))
 
-
-
-
+    print 'Writing metadata...'
+    # writes metadata in CSV format
+    directory = SimpleFSDirectory(File(lucenedir))
+    searcher = IndexSearcher(directory, True)
+    write_metadata(searcher,scoreDocs,md_filename)
 
     
 def write_metadata(searcher,scoreDocs,fname):
@@ -119,7 +122,6 @@ def write_metadata(searcher,scoreDocs,fname):
 
     for scoreDoc in scoreDocs:
         doc = searcher.doc(scoreDoc.doc)
-
         df = {}
         for f in doc.getFields():
             field = Field.cast_(f)
@@ -127,7 +129,22 @@ def write_metadata(searcher,scoreDocs,fname):
         docFields.append(df)
         allFields = allFields.union(set(df.keys()))
 
-    print docFields, allFields
+    
+    fields = ['name','path'] + sorted([x for x in allFields if x not in ['name','path']])
+    with codecs.open(fname, 'w', encoding='UTF-8') as outf:
+        dw = csv.DictWriter(outf, fields)
+        
+        # writing header
+        dhead = dict()
+        for k in fields:
+            dhead[k] = k
+        dw.writerow(dhead)
+        
+        # writing data
+        for d in docFields:
+            dw.writerow(d)
+
+
 
 
 
