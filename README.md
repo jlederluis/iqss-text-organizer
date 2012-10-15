@@ -67,3 +67,11 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 #### index
 
 * `index` --- prints a list of all available Lucene indices and allows the user to choose one for use. This index remains active until the user changes it again (so adding files with `txtorg -a` or `txtorg -C` will add them to the selected Lucene index). Also provides the option to create and use a new Lucene index.
+
+### Index Maintenance
+Since adding the content of all files to the Lucene database would take prohibitively large amounts of disk space, the database stores the filepath of each document instead. If files are moved, renamed, or deleted from the disk, then the index no longer points to the file and various features of `txtorg` will fail. The following commands are designed to help maintain the integrity of the index and avoid broken links.
+
+#### cleanup
+
+* `cleanup` --- runs through the entire index and displays a list of items that no longer point to valid files on disk. Allows the user to delete these items from the index if desired.
+

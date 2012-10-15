@@ -114,7 +114,6 @@ def write_CTM_TDM(scoreDocs, allDicts, allTerms, lucenedir, fname):
     directory = SimpleFSDirectory(File(lucenedir))
     searcher = IndexSearcher(directory, True)
     write_metadata(searcher,scoreDocs,md_filename)
-
     
 def write_metadata(searcher,scoreDocs,fname):
     allFields = set([])
@@ -144,11 +143,6 @@ def write_metadata(searcher,scoreDocs,fname):
         for d in docFields:
             dw.writerow(d)
 
-
-
-
-
-
 def write_files(searcher,scoreDocs,outdir):
 
     failFlag = False
@@ -165,3 +159,10 @@ def write_files(searcher,scoreDocs,outdir):
 
     if failFlag:
         "WARNING: some files failed to copy."
+
+def print_all_files(reader):
+    for i in xrange(reader.maxDoc()):
+        if reader.isDeleted(i): continue
+        doc = reader.document(i)
+        if not os.path.isfile(doc.get("path")):
+            print "%s is not a file" % (doc.get("path"),)

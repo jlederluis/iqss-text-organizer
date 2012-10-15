@@ -4,7 +4,7 @@ import clint
 import sys
 import os
 import lucene
-from textorganizer import indexfiles, searchfiles, addmetadata, stemmingtools
+from textorganizer import indexfiles, searchfiles, addmetadata, stemmingtools, indexutils
 
 class TextOrganizer:
     def __init__(self,lucenedir,programdir=None):
@@ -117,6 +117,8 @@ class TextOrganizer:
                 self.change_index()
             elif instr.startswith('clear'):
                 self.clear_selections()
+            elif instr.startswith('cleanup'):
+                self.cleanup_index()
             elif instr == 'h' or instr == 'help':
                 self.show_help()
             else:
@@ -216,6 +218,10 @@ class TextOrganizer:
             print "Could not understand input. Defaulting to %s." % (self.analyzers.keys()[0],)
             return self.analyzers.keys()[0]
 
+
+    def cleanup_index(self):
+        ic = indexutils.IndexCleaner(self.lucenedir)
+        ic.cleanup_index()
 
     def add_metadata(self,csvfile,new_files=False):
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
