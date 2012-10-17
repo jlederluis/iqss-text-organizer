@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from lucene import \
     QueryParser, IndexSearcher, SimpleFSDirectory, File, \
-    VERSION, initVM, Version, IndexReader, TermQuery, Term, Field
+    VERSION, initVM, Version, IndexReader, TermQuery, Term, Field, MatchAllDocsQuery
 import threading, sys, time, os, csv, re, codecs
 from shutil import copy2
 
@@ -26,8 +26,10 @@ def run(searcher, analyzer, reader, command):
 
     """check to see whether the user specified a field"""
     m = re.match(r'([a-zA-Z]+):(.*)',command)
-
-    if m is None:
+    
+    if command == 'all':
+        query = MatchAllDocsQuery()
+    elif m is None:
         query = QueryParser(Version.LUCENE_CURRENT, "contents",analyzer).parse(command)
     else:
         """make a TermQuery with the fieldname and value"""

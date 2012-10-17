@@ -271,6 +271,8 @@ class TextOrganizer:
                 print "Invalid query; see Lucene documentation for information on query syntax"
             elif 'IllegalArgumentException' in str(e):
                 print "Index is empty and cannot be queried"
+                searcher.close
+                return
             else:
                 raise e
 
