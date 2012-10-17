@@ -115,6 +115,8 @@ class TextOrganizer:
                 self.active_analyzer = self.change_analyzer(instr[9:])
             elif instr.startswith('index'):
                 self.change_index()
+            elif instr.startswith('reindex'):
+                self.reindex()
             elif instr.startswith('clear'):
                 self.clear_selections()
             elif instr.startswith('cleanup'):
@@ -220,8 +222,19 @@ class TextOrganizer:
 
 
     def cleanup_index(self):
-        ic = indexutils.IndexCleaner(self.lucenedir)
+        ic = indexutils.IndexManager(self.lucenedir)
         ic.cleanup_index()
+
+    def reindex(self):
+        if (self.scoreDocs is None):
+            print "Select documents with \"select [query]\" before reindexing them."
+            return False
+
+        print "Reindexing selected items using %s" % (self.active_analyzer,)
+        ic = indexutils.IndexManager(self.lucenedir)
+        ic.reindex(self.scoreDocs, self.analyzers[self.active_analyzer])
+        self.clear_selections()
+
 
     def add_metadata(self,csvfile,new_files=False):
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))

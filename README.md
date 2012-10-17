@@ -64,6 +64,10 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 
 * `analyzer` --- prints a list of all available analyzers and allows the user to choose one for use in searching/exporting.
 
+#### reindex
+
+* `reindex` --- rebuilds the Lucene index for the selection using the active analyzer. This is useful if you have added terms to `phrases.txt`, as you can re-run the PorterStemmerAnalyzer on a selection using the new additions.
+
 #### index
 
 * `index` --- prints a list of all available Lucene indices and allows the user to choose one for use. This index remains active until the user changes it again (so adding files with `txtorg -a` or `txtorg -C` will add them to the selected Lucene index). Also provides the option to create and use a new Lucene index.
