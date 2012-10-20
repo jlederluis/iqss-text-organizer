@@ -49,8 +49,13 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 
 #### Query Syntax
 Any valid lucene query may be used with 'select'. Below are some syntax rules for lucene queries. 
-  * Boolean operators --- Lucene supports AND, "+", OR, NOT and "-" as Boolean operators (Note: Boolean operators must be ALL CAPS). 
- 
+* Boolean operators --- Lucene supports 'AND', "+", 'OR', 'NOT' and "-" as Boolean operators (Note: Boolean operators must be ALL CAPS). 
+  * 'OR' --- links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets. The symbol || can be used in place of the word OR.
+  * 'AND' --- matches documents where both terms exist anywhere in the text of a single document. This is equivalent to an intersection using sets. The symbol && can be used in place of the word AND.
+  * '+' --- requires that the term after the "+" symbol exist somewhere in a the field of a single document.
+  * 'NOT' --- excludes documents that contain the term after NOT. This is equivalent to a difference using sets. 
+  * '-' --- excludes documents that contain the term after the "-" symbol.
+
 #### clear
 * `clear` --- Clears the active selection.
 
