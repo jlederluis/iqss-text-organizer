@@ -46,9 +46,11 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
 * `select [QUERY]` --- runs lucene query QUERY on the database, and prints the number of documents selected.
   * To search by a metadata field, use a query of the form `fieldname:value`. Note that since metadata fields are set to NOT_ANALYZED in the Lucene database, this must be an exact-text match,
   * If you have already made a selection, running `select` again will search within your previous selection. If you want to start a fresh search instead, type `clear` to clear the active selection.
-* [QUERY] syntax --- valid lucene queries are valid in txtorg. Below are some syntax rules for lucene queries. 
-  * 
 
+#### Query Syntax
+Any valid lucene query may be used with 'select'. Below are some syntax rules for lucene queries. 
+  * Boolean operators --- Lucene supports AND, "+", OR, NOT and "-" as Boolean operators (Note: Boolean operators must be ALL CAPS). 
+ 
 #### clear
 * `clear` --- Clears the active selection.
 
