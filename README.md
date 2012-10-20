@@ -47,14 +47,26 @@ To run iqss-text-organizer in interactive mode, you can simply run `txtorg` from
   * To search by a metadata field, use a query of the form `fieldname:value`. Note that since metadata fields are set to NOT_ANALYZED in the Lucene database, this must be an exact-text match,
   * If you have already made a selection, running `select` again will search within your previous selection. If you want to start a fresh search instead, type `clear` to clear the active selection.
 
-#### Query Syntax
-Any valid lucene query may be used with 'select'. Below are some syntax rules for lucene queries. 
-* Boolean operators --- Lucene supports 'AND', "+", 'OR', 'NOT' and "-" as Boolean operators (Note: Boolean operators must be ALL CAPS). 
-  * 'OR' --- links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets. The symbol || can be used in place of the word OR.
-  * 'AND' --- matches documents where both terms exist anywhere in the text of a single document. This is equivalent to an intersection using sets. The symbol && can be used in place of the word AND.
-  * '+' --- requires that the term after the "+" symbol exist somewhere in a the field of a single document.
-  * 'NOT' --- excludes documents that contain the term after NOT. This is equivalent to a difference using sets. 
-  * '-' --- excludes documents that contain the term after the "-" symbol.
+#### Query Syntax (from lucene.apache.org)
+Any valid lucene query may be used with `select`. Below are some syntax rules for lucene queries. 
+* Boolean operators --- Lucene supports `AND`, `+`, `OR`, `NOT` and `-` as Boolean operators (Note: Boolean operators must be ALL CAPS). 
+  * `OR` --- links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets. The symbol || can be used in place of the word OR.
+  * `AND` --- matches documents where both terms exist anywhere in the text of a single document. This is equivalent to an intersection using sets. The symbol && can be used in place of the word AND.
+  * `+` --- requires that the term after the `+` symbol exist somewhere in a the field of a single document.
+  * `NOT` --- excludes documents that contain the term after NOT. This is equivalent to a difference using sets. 
+  * `-` --- excludes documents that contain the term after the `-` symbol.
+* Grouping
+  * Parentheses may be used to group clauses to form sub queries. This can be very useful if you want to control the boolean logic for a query. To search for either "jakarta" or "apache" and "website" use the query: `(jakarta OR apache) AND website`
+  * Parentheses may also be used to group multiple clauses to a single field. To search for a title that contains both the word "return" and the phrase "pink panther" use the query: `title:(+return +"pink panther")`.
+* Escaping Special character - `+ - && || ! ( ) { } [ ] ^ " ~ * ? : \` are treated as special characters. To escape these character, use `\` before the character.
+* Wildcard searches --- Lucene supports single and multiple character wildcard searches within single terms (not within phrase queries).
+  * To perform a single character wildcard search use the `?` symbol. The single character wildcard search looks for terms that match that with the single character replaced. For example, to search for "text" or "test" you can use the search: `te?t`.
+  * To perform a multiple character wildcard search use the `*` symbol. Multiple character wildcard searches looks for 0 or more characters. For example, to search for test, tests or tester, you can use the search: `test*`.
+  * You cannot use `?` or `*` as the first character in a query.
+* Fuzzy Searches --- Lucene supports fuzzy searches based on the Levenshtein Distance, or Edit Distance algorithm. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: `roam~`. This search will find terms like foam and roams.
+* Proximity Searches ---  to do a proximity search use the tilde, `~`, symbol at the end of a Phrase. For example to search for a "apache" and "jakarta" within 10 words of each other in a document use the search: `"jakarta apache"~10`.
+* Range Searches --- match documents whose field(s) values are between the lower and upper bound specified by the Range Query. Range Queries can be inclusive or exclusive of the upper and lower bounds. Sorting is done lexicographically.
+  * Example: `mod_date:[20020101 TO 20030101]` will find documents whose mod_date fields have values between 20020101 and 20030101, inclusive. 
 
 #### clear
 * `clear` --- Clears the active selection.
