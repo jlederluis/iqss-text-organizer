@@ -33,7 +33,7 @@ Adding files with the command `txtorg -a` or `txtorg -C` will index the document
 * StandardAnalyzer (default)
 * SmartChineseAnalyzer (use for Chinese text)
 * PorterStemmerAnalyzer
-  * This analyzer includes all n-grams (phrases) listed in the file `phrases.txt` as tokens for indexing and TDM export. For instance, if `phrases.txt` included the line `Barack Obama`, then exported TDMs would contain a column for `Barack Obama`. Using the default analyzer, this would be split over two columns: `Barack` and `Obama`. To enable this functionality, place the file `phrases.txt`, containing one entry per line, in the same directory as the `txtorg` executable.
+  * This analyzer includes all n-grams (phrases) listed in the file `phrases.txt` as tokens for indexing and TDM export. For instance, if `phrases.txt` included the line `Barack Obama`, then exported TDMs would contain a column for `Barack Obama`. Using the default analyzer, this would be split over two columns: `Barack` and `Obama`. To enable this functionality, place the file `phrases.txt`, containing one entry per line, in the same directory as the `txtorg` executable. To search for a phrase, simply call the select function and include the phrase in quotes.
   * This analyzer also performs a Porter Stemming algorithm on all documents so that, for example, the words `document` and `documents` are counted as the same term in the TDM.
 
 
