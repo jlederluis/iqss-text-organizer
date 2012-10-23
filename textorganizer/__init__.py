@@ -1,1 +1,1 @@
-__all__ = ["indexfiles", "searchfiles","addmetadata"]
+__all__ = ["indexfiles", "searchfiles","addmetadata","analyzerutils","stemmingtools","indexutils"]

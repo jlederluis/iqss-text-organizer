@@ -4,7 +4,7 @@ import clint
 import sys
 import os
 import lucene
-from textorganizer import indexfiles, searchfiles, addmetadata, stemmingtools
+from textorganizer import indexfiles, searchfiles, addmetadata, stemmingtools, indexutils
 
 class TextOrganizer:
     def __init__(self,lucenedir,programdir=None):
@@ -19,9 +19,20 @@ class TextOrganizer:
         self.allDicts = None
         #This is the analyzer used for searching and indexing. Defaults to English
 
-        self.analyzers = {'StandardAnalyzer': lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT),
-            'SmartChineseAnalyzer': lucene.SmartChineseAnalyzer(lucene.Version.LUCENE_CURRENT),
-            'PorterStemmerAnalyzer': stemmingtools.init_PSA(os.path.join(self.programdir,"phrases.txt"))}
+        self.analyzers = {}
+
+        self.analyzers['StandardAnalyzer'] = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+
+        try:
+            self.analyzers['SmartChineseAnalyzer'] = lucene.SmartChineseAnalyzer(lucene.Version.LUCENE_CURRENT)
+        except:
+            print "SmartChineseAnalyzer not found"
+
+        try:
+            self.analyzers['PorterStemmerAnalyzer'] = stemmingtools.init_PSA(os.path.join(self.programdir,"phrases.txt"))
+        except:
+            print "PorterStemmerAnalyzer not found."            
+
         self.active_analyzer = 'StandardAnalyzer'
 
     
@@ -83,6 +94,7 @@ class TextOrganizer:
 
     def mainprompt(self):
         print "Entering interactive mode. Type 'h' or 'help' for supported syntax."
+
         while True:
         #present user with a prompt, grab input, and convert to lowercase
             instr=raw_input("> ").lower()
@@ -101,10 +113,93 @@ class TextOrganizer:
                 self.view_fields()
             elif instr.startswith('analyzer'):
                 self.active_analyzer = self.change_analyzer(instr[9:])
+            elif instr.startswith('index'):
+                self.change_index()
+            elif instr.startswith('reindex'):
+                self.reindex()
+            elif instr.startswith('clear'):
+                self.clear_selections()
+            elif instr.startswith('cleanup'):
+                self.cleanup_index()
             elif instr == 'h' or instr == 'help':
                 self.show_help()
             else:
                 print "Input not understood. Type 'h' or 'help' for help."
+
+    def change_index(self):
+        print "Available Lucene indices:\n"
+
+        available_indices = []
+        with open(os.path.join(self.programdir, 'available_indices')) as inf:
+            for idx, line in enumerate(inf):
+                if line.strip() == self.lucenedir:
+                    print "* " + str(idx + 1).ljust(5, ' ') + line.strip()
+                else:
+                    print "  " + str(idx + 1).ljust(5, ' ') + line.strip()
+                available_indices.append(line.strip())
+
+        print "\nType the number corresponding to the desired Lucene index, or type 'n' to create a new one."
+
+        while True:
+            choice = raw_input('> ').lower()
+            if choice not in [str(x + 1) for x in range(idx + 1)] + ['n','q']:
+                print "Not a valid selection. Type a number to select an existing index, 'n' to create a new index, or 'q' to cancel."
+                continue
+            else:
+                break
+        
+        if choice in [str(x + 1) for x in range(idx + 1)]:
+            # set lucenedir to selection, and write available_indices back to file with the
+            # selected one first (making it default until changed again)
+            self.lucenedir = available_indices[int(choice) - 1]
+            with open(os.path.join(self.programdir, 'available_indices'), 'w') as outf:
+                outf.write(self.lucenedir + '\n')
+                for line in filter(lambda x: x != self.lucenedir, available_indices):
+                    outf.write(line+'\n')
+
+        elif choice == 'q':
+            print "Canceled. Current index:", self.lucenedir
+            return
+        elif choice == 'n':
+            print "Please type the path pointing to the Lucene index you would like to open or create."
+            while True:
+                rawpath = raw_input('> ')
+                if rawpath.lower() == 'q': 
+                    print "Canceled. Current index:", self.lucenedir
+                    return
+                try:
+                    expanded_path = os.path.realpath(os.path.expanduser(rawpath))
+                    if not os.path.exists(expanded_path):
+                        # make a new index
+                        os.mkdir(expanded_path)
+                        analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+                        writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(expanded_path)), analyzer, True, lucene.IndexWriter.MaxFieldLength.LIMITED)
+                        writer.setMaxFieldLength(1048576)
+                        writer.optimize()
+                        writer.close()
+
+                    if not os.path.isdir(expanded_path):
+                        raise OSError
+
+                    self.lucenedir = expanded_path
+                    break
+                except OSError:
+                    print "File path not understood. Please try again or type 'q' to quit."
+                    continue
+
+            with open(os.path.join(self.programdir, 'available_indices'), 'w') as outf:
+                outf.write(self.lucenedir + '\n')
+                for line in available_indices:
+                    outf.write(line+'\n')
+
+        self.scoreDocs = None
+        self.allTerms = None
+        self.allDicts = None
+
+        print "Index changed to", self.lucenedir
+        
+
+        
 
     def change_analyzer(self,analyzer=None):
         if analyzer is None or analyzer not in self.analyzers.keys():
@@ -126,6 +221,21 @@ class TextOrganizer:
             return self.analyzers.keys()[0]
 
 
+    def cleanup_index(self):
+        ic = indexutils.IndexManager(self.lucenedir)
+        ic.cleanup_index()
+
+    def reindex(self):
+        if (self.scoreDocs is None):
+            print "Select documents with \"select [query]\" before reindexing them."
+            return False
+
+        print "Reindexing selected items using %s" % (self.active_analyzer,)
+        ic = indexutils.IndexManager(self.lucenedir)
+        ic.reindex(self.scoreDocs, self.analyzers[self.active_analyzer])
+        self.clear_selections()
+
+
     def add_metadata(self,csvfile,new_files=False):
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
@@ -141,18 +251,41 @@ class TextOrganizer:
         reader = lucene.IndexReader.open(directory, True)
 
         try:
-            self.scoreDocs, self.allTerms, self.allDicts = searchfiles.run(searcher, self.analyzers[self.active_analyzer], reader, command)
+            print "Running Lucene query \"%s\"" % (command,)
+            new_scoreDocs, new_allTerms, new_allDicts = searchfiles.run(searcher, self.analyzers[self.active_analyzer], reader, command)
 
+            if self.scoreDocs is None or self.allTerms is None or self.allDicts is None:
+                self.scoreDocs, self.allTerms, self.allDicts = new_scoreDocs, new_allTerms, new_allDicts
+            else:
+                # intersect active search with this one
+                print 'Searching within previous selection. To clear your selections, type "clear"'
+                new_scoredoc_ids = [d.doc for d in new_scoreDocs]
+                intersected_scoredoc_indices = [i for i in range(len(self.scoreDocs)) if self.scoreDocs[i].doc in new_scoredoc_ids]
+
+                self.scoreDocs = [self.scoreDocs[i] for i in intersected_scoredoc_indices]
+                self.allTerms = set(self.allTerms).intersection(new_allTerms)
+                self.allDicts = [self.allDicts[i] for i in intersected_scoredoc_indices]
+                
         except lucene.JavaError as e:
-            print "Invalid query; see Lucene documentation for information on query syntax"
-            self.scoreDocs = None
-            self.allTerms = None
-            self.allDicts = None
+            if 'ParseException' in str(e):
+                print "Invalid query; see Lucene documentation for information on query syntax"
+            elif 'IllegalArgumentException' in str(e):
+                print "Index is empty and cannot be queried"
+                searcher.close
+                return
+            else:
+                raise e
 
-
-        #Alex, you mentioned at the top of searchfiles.py that searcher.close() sometimes causes stack overflows, but it was not commented out. Did you fix this issue?
-
+        print "%s total matching documents." % len(self.scoreDocs)
+        print "%s total unique terms." % len(self.allTerms)
         searcher.close()
+
+    def clear_selections(self):
+        print "Selections cleared."
+        self.scoreDocs = None
+        self.allTerms = None
+        self.allDicts = None
+
 
     def view_fields(self):
         if (self.scoreDocs is None) or (self.allTerms is None) or (self.allDicts is None):
@@ -175,7 +308,7 @@ class TextOrganizer:
             print "Select documents with \"select [query]\" before exporting TDM"
             return 
 
-        print "Choose a file for export (leave blank to accept default -> ./tdm.csv)"
+        print "Choose a file for export (leave blank to accept default -> ./tdm.txt)"
         outfile = './tdm.csv'
         outfile_raw = raw_input("> ")
         if outfile_raw == "":
@@ -184,7 +317,8 @@ class TextOrganizer:
             outfile = os.path.realpath(os.path.expanduser(outfile_raw))
 
         print "Exporting TDM to ", outfile
-        searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
+        # searchfiles.writeTDM(self.allDicts, self.allTerms, outfile)
+        searchfiles.write_CTM_TDM(self.scoreDocs, self.allDicts, self.allTerms, self.lucenedir, outfile)
 
     def choose_or_create_dir(self,default):
 
@@ -235,11 +369,16 @@ class TextOrganizer:
         directory = lucene.SimpleFSDirectory(lucene.File(self.lucenedir))
         searcher = lucene.IndexSearcher(directory, True)
         
-        outdir = self.choose_or_create_dir('./export/')
-        if outdir is None: return
+        print "Choose a file for export (leave blank to accept default -> ./metadata.csv)"
+        outfile = './metadata.csv'
+        outfile_raw = raw_input("> ")
+        if outfile_raw == "":
+            outfile = os.path.realpath(outfile)
+        else:
+            outfile = os.path.realpath(os.path.expanduser(outfile_raw))
 
-        print "Exporting files to directory", outdir
-        searchfiles.write_metadata(searcher,self.scoreDocs, outdir)
+        print "Exporting files to directory", outfile
+        searchfiles.write_metadata(searcher,self.scoreDocs, outfile)
 
 
 
@@ -260,6 +399,9 @@ export files
 analyzer
 \tPrints active analyzer and lets you choose a new one.
 
+index
+\tPrints a list of available Lucene indices and lets you choose or create one.
+
 view fields
 \tPrints a list of all defined fields, and their values, for the selected documents.
 
@@ -275,8 +417,15 @@ if __name__ == '__main__':
     print 'lucene', lucene.VERSION
 
     programdir = os.path.join(os.path.dirname(__file__))
-    lucenedir = os.path.join(programdir,'lucene_index')
-
+    try:
+        with open(os.path.join(programdir,'available_indices'), 'r') as inf:
+            lucenedir = inf.readline().strip()
+            if not os.path.isdir(lucenedir): raise IOError
+    except IOError:
+        with open(os.path.join(programdir,'available_indices'), 'w') as outf:
+            lucenedir = os.path.join(programdir,'lucene_index')
+            outf.write(lucenedir)
+        
     print "index location:", lucenedir
 
     if not os.path.exists(lucenedir):
