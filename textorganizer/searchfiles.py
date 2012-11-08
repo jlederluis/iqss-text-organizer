@@ -79,7 +79,7 @@ def writeTDM(allDicts,allTerms,fname):
         c.writerow(d)
     f.close()
 
-def write_CTM_TDM(scoreDocs, allDicts, allTerms, lucenedir, fname):
+def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, fname):
     l = list(allTerms)
     l.sort()
     
@@ -113,8 +113,7 @@ def write_CTM_TDM(scoreDocs, allDicts, allTerms, lucenedir, fname):
 
     print 'Writing metadata...'
     # writes metadata in CSV format
-    directory = SimpleFSDirectory(File(lucenedir))
-    searcher = IndexSearcher(directory, True)
+
     write_metadata(searcher,scoreDocs,md_filename)
     
 def write_metadata(searcher,scoreDocs,fname):
