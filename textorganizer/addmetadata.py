@@ -116,3 +116,11 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
 
     if failed:
         print "Could not locate index entries for some paths. Use txtorg -a [directory] to add files to index before adding metadata."
+
+# def update_fieldname_index(available_attributes_filename, index_path, fieldnames):
+#     lines = []
+#     with codecs.open(available_attributes_filename, encoding='UTF-8','r') as inf:
+#         for line in inf:
+#             if line.startswith(index_path):
+                
+
