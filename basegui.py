@@ -22,6 +22,14 @@ class txtorgui:
         lf = Frame(f, relief=GROOVE, borderwidth=2)
         Label(lf, text="Corpus").pack(pady=10,padx=10)
 
+        # Top level Menu bar
+        self.menubar = Menu(f)
+        menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=menu)
+        menu.add_command(label="New Corpus")
+        menu.add_command(label="Open Corpus")
+
+        f.master.config(menu=self.menubar)
         # Items in the left frame
         self.corpuslist = Listbox(lf, width=40)
         corpusscroll = Scrollbar(lf, command=self.corpuslist.yview)
