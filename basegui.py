@@ -10,6 +10,21 @@ import re
 from textorganizer.engine import Corpus
 import Queue
 import lucene
+from functools import partial
+
+class EntryDialog:
+    def __init__(self, parent, callback, label="Enter a value:"):
+        self.callback = callback
+        top = self.top = Toplevel(parent)
+        Label(top, text=label).pack()
+        self.e = Entry(top)
+        self.e.pack(padx=5)
+        b = Button(top, text="OK", command=self.ok)
+        b.pack(pady=5)
+
+    def ok(self):
+        self.callback(self.e.get())
+        self.top.destroy()
 
 class txtorgui:
     def __init__(self):
@@ -17,7 +32,7 @@ class txtorgui:
         self.queue = Queue.Queue()
         lucene.initVM()
         self.update()
-        self.root.title('txtorg')
+        self.root.title('Text Organizer')
         f = Frame(self.root, width=800, height=110)
         lf = Frame(f, relief=GROOVE, borderwidth=2)
         Label(lf, text="Corpus").pack(pady=10,padx=10)
@@ -26,8 +41,8 @@ class txtorgui:
         self.menubar = Menu(f)
         menu = Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="File", menu=menu)
-        menu.add_command(label="New Corpus")
-        menu.add_command(label="Open Corpus")
+        menu.add_command(label="New Corpus", command=self.new_corpus_btn_click)
+        menu.add_command(label="Open Corpus", command=self.open_corpus)
 
         f.master.config(menu=self.menubar)
         # Items in the left frame
@@ -122,9 +137,34 @@ class txtorgui:
     def show_message(self,message):
         tkMessageBox.showinfo("Error", message)
 
+    def new_corpus_btn_click(self):
+
+        dir_name = tkFileDialog.askdirectory(parent=self.root ,title="Choose a directory in which to save the Corpus...")
+        if dir_name == "" or dir_name == ():
+            return
+
+        d = EntryDialog(self.root, partial(self.make_new_corpus, dir_name), label="Please choose a name for the index")
+        self.root.wait_window(d.top)
+
+    def make_new_corpus(self,  dir_name, corpus_name):
+        # strip all non-alphanumeric characters from the corpus name
+        good_corpus_name = "".join([c for c in corpus_name if c.isalnum()])
+        if good_corpus_name == "": return
+
+        new_index_path = os.path.join(dir_name, good_corpus_name)
+        with codecs.open(os.path.join(os.path.dirname(__file__), "available_indices_gui"), 'a', encoding='UTF-8') as outf:
+            outf.write(new_index_path+"{}\n")
+        self.updateCorpus()
+
+
+    def open_corpus(self):
+        pass
+
     def updateCorpus(self):
         """update the list of items in the corpus"""
-        print "update corpus"
+        print "update corpus list"
+        self.corpora = []
+        self.corpuslist.delete(0, END)
         print os.path.dirname(__file__)
         with codecs.open(os.path.join(os.path.dirname(__file__), "available_indices_gui"), encoding='UTF-8') as inf:
             for line in inf:
@@ -160,14 +200,14 @@ class txtorgui:
 
         self.mdlist.delete(0,END)
         for item in self.corpora[self.corpus_idx].fields:
-            self.mdlist.insert(END, item)   
+            self.mdlist.insert(END, item)
         
         # enable clicking on these
         self.searchbutton.configure(state=NORMAL)
         self.e.configure(state=NORMAL)
 
         self.updateCounts(0, 0)
-        print "leaving update metadata"        
+        print "leaving update metadata"
         
     def saveTDM(self):        
         """pop up a dialog to save the TDM"""
