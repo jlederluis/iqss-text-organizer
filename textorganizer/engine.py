@@ -2,7 +2,7 @@ import Queue
 import threading
 import lucene
 import os
-from . import searchfiles
+from . import searchfiles, indexfiles
 
 class Corpus(threading.Thread):
     scoreDocs = None
@@ -32,6 +32,10 @@ class Corpus(threading.Thread):
         self.searcher = lucene.IndexSearcher(self.lucene_index, True)
         self.reader = lucene.IndexReader.open(self.lucene_index, True)
         self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+
+    def import_directory(self, dirname):
+        indexfiles.IndexFiles(dirname, self.path, self.analyzer)
+
 
     def run_searcher(self, command):
         try:

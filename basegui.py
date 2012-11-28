@@ -12,6 +12,36 @@ import Queue
 import lucene
 from functools import partial
 
+class ImportDialog:
+    def __init__(self, parent, callback):
+        self.parent = parent
+        self.callback = callback
+        top = self.top = Toplevel(parent)
+        self.choice_var = IntVar()
+        rb1 = Radiobutton(top, text="Import an entire directory", variable=self.choice_var, value=1)
+        rb1.select()
+        rb1.pack(anchor=W)
+        Radiobutton(top, text="Import from a CSV file (with metadata)", variable=self.choice_var, value=2).pack(anchor=W)
+        b = Button(top, text="OK", command=self.ok)
+        b.pack(pady=5)
+
+    def ok(self):
+
+        if self.choice_var.get() == 1:
+            dir_name = tkFileDialog.askdirectory(parent=self.top ,title="Choose a directory to import...")
+            if dir_name == "" or dir_name == ():
+                return
+            self.callback({'dir': dir_name})
+            
+        elif self.choice_var.get() == 2:
+            file_name =  tkFileDialog.askopenfilename(parent=self.parent.root ,title="Choose a CSV file containing filepaths and metadata...")
+            if file_name == "" or file_name == ():
+                return
+            self.callback({'file': file_name})
+
+        self.top.destroy()
+        
+
 class EntryDialog:
     def __init__(self, parent, callback, label="Enter a value:"):
         self.callback = callback
@@ -40,9 +70,15 @@ class txtorgui:
         # Top level Menu bar
         self.menubar = Menu(f)
         menu = Menu(self.menubar, tearoff=0)
+        
+
         self.menubar.add_cascade(label="File", menu=menu)
         menu.add_command(label="New Corpus", command=self.new_corpus_btn_click)
         menu.add_command(label="Open Corpus", command=self.open_corpus)
+
+        menu_c = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Corpus", menu=menu_c)
+        menu_c.add_command(label="Import Documents...", command=self.import_btn_click)
 
         f.master.config(menu=self.menubar)
         # Items in the left frame
@@ -156,6 +192,13 @@ class txtorgui:
             outf.write(new_index_path+"{}\n")
         self.updateCorpus()
 
+    def import_btn_click(self):
+        d = ImportDialog(self.root, self.import_files)
+        self.root.wait_window(d.top)
+
+    def import_files(self, args_dir):
+        self.corpora[self.corpus_idx].import_directory(args_dir['dir'])
+        print "done!"
 
     def open_corpus(self):
         pass

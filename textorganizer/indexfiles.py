@@ -30,6 +30,7 @@ class IndexFiles(object):
 
         if not os.path.exists(storeDir):
             os.mkdir(storeDir)
+            
         store = lucene.SimpleFSDirectory(lucene.File(storeDir))
         writer = lucene.IndexWriter(store, analyzer, False,
                                     lucene.IndexWriter.MaxFieldLength.LIMITED)
