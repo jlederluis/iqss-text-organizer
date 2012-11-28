@@ -82,12 +82,12 @@ class txtorgui:
 
         f.master.config(menu=self.menubar)
         # Items in the left frame
-        self.corpuslist = Listbox(lf, width=40)
+        self.corpuslist = Listbox(lf, width=40,exportselection=False)
         corpusscroll = Scrollbar(lf, command=self.corpuslist.yview)
         self.corpuslist.configure(yscrollcommand=corpusscroll.set)
-        self.corpuslist.pack(side=LEFT, fill=Y, expand=True)
+        self.corpuslist.pack(side=LEFT, fill=BOTH, expand=True)
         corpusscroll.pack(side=LEFT, fill=Y)
-        lf.pack(side=LEFT, fill=BOTH, expand = 1)
+        lf.pack(side=LEFT, fill=BOTH, expand = 1,padx=10,pady=10)
 
         # Items in the center frame
         cf = Frame(f, relief=GROOVE, borderwidth=2)
@@ -96,14 +96,14 @@ class txtorgui:
         cft = Frame(cf, borderwidth=2)
         cfb = Frame(cf, borderwidth=2)
 
-        self.mdlist = Listbox(cft, height=8, width=15, selectmode=MULTIPLE)
+        self.mdlist = Listbox(cft, height=8, width=15, selectmode=MULTIPLE, exportselection=False)
         scroll = Scrollbar(cft, command=self.mdlist.yview)
         self.mdlist.configure(yscrollcommand=scroll.set)
-        self.mdlist.pack(side=LEFT,fill=Y,expand=True)
+        self.mdlist.pack(side=LEFT,fill=BOTH,expand=True)
         scroll.pack(side=LEFT,fill=Y)
 
         self.e = Entry(cfb,state=DISABLED)
-        self.e.pack(side=LEFT)
+        self.e.pack(side=LEFT,fill=X,expand=1)
 
         self.e.delete(0, END)
         self.e.insert(0, "a default value")
@@ -111,9 +111,9 @@ class txtorgui:
         self.searchbutton = Button(cfb, text="Search",state=DISABLED,command=self.runQuery)
         self.searchbutton.pack(side=LEFT, padx=5, pady=8)
 
-        cft.pack()
-        cfb.pack()
-        cf.pack(side=LEFT, fill=BOTH, expand = 1)
+        cft.pack(fill=BOTH, expand = 1)
+        cfb.pack(fill=X)
+        cf.pack(side=LEFT, fill=BOTH, expand = 1,pady=10,padx=10)
 
         # Right frame
 
@@ -130,11 +130,11 @@ class txtorgui:
         self.exportbutton.pack()        
         
         
-        rf.pack(side=RIGHT, fill=BOTH, expand = 1)
+        rf.pack(side=RIGHT, fill=BOTH, expand = 1,pady=10,padx=10)
 
 
         # Pack it all into the main frame
-        f.pack()
+        f.pack(fill=BOTH,expand=1)
 
         # set up event handling
 
