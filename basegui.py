@@ -7,7 +7,7 @@ import codecs
 import os
 import time
 import re
-from textorganizer.engine import Corpus
+from textorganizer.engine import Corpus, Worker
 import Queue
 import lucene
 from functools import partial
@@ -138,7 +138,7 @@ class txtorgui:
 
         # set up event handling
 
-        self.corpuslist.bind('<ButtonRelease-1>',lambda x: self.updateMetadata())
+        self.corpuslist.bind('<ButtonRelease-1>', lambda x: self.updateMetadata())
 
         # populate fields and run the gui
         
@@ -156,7 +156,7 @@ class txtorgui:
             while True:
                 line = self.queue.get_nowait()
                 if 'query_results' in line.keys():
-                    self.updateCounts(*line['query_results'])
+                    self.receive_query_results(*line['query_results'])
                 if 'error' in line.keys():
                     self.show_error(line['error'])
                 if 'message' in line.keys():
@@ -197,7 +197,9 @@ class txtorgui:
         self.root.wait_window(d.top)
 
     def import_files(self, args_dir):
-        self.corpora[self.corpus_idx].import_directory(args_dir['dir'])
+        # self.corpora[self.corpus_idx].import_directory(args_dir['dir'])
+        c = Worker(self, self.corpora[self.corpus_idx], {'import_directory': args_dir['dir']})
+        c.start()
         print "done!"
 
     def open_corpus(self):
@@ -213,7 +215,7 @@ class txtorgui:
             for line in inf:
                 parse_re = re.compile(r'(^.*)\{(.*)\}$')
                 if parse_re.search(line) is None: continue
-                c = Corpus(self, parse_re.search(line).group(1).strip(), fields = parse_re.search(line).group(2).split(','))
+                c = Corpus(parse_re.search(line).group(1).strip(), fields = parse_re.search(line).group(2).split(','))
                 self.corpora.append(c)
                 self.corpuslist.insert(END, c.path)
         if len(self.corpora) == 0:
@@ -249,7 +251,7 @@ class txtorgui:
         self.searchbutton.configure(state=NORMAL)
         self.e.configure(state=NORMAL)
 
-        self.updateCounts(0, 0)
+        self.receive_query_results([], [], [])
         print "leaving update metadata"
         
     def saveTDM(self):        
@@ -264,28 +266,36 @@ class txtorgui:
         if fileName == "" or fileName == ():
             return
 
-        self.corpora[self.corpus_idx].export_TDM(fileName)
+        c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm': fileName})
+        c.start()
 
     def runQuery(self):
         """runs a query using the run_searcher method of the active Corpus"""
         print "running query"
-        self.corpora[self.corpus_idx].run_searcher(self.e.get().strip())
+        c = Worker(self, self.corpora[self.corpus_idx], {'search': self.e.get().strip()})
+        c.start()
+
+        # self.corpora[self.corpus_idx].run_searcher(self.e.get().strip())
 
 
-    def updateCounts(self, numDocs, numTerms):
+    def receive_query_results(self, scoreDocs, allTerms, allDicts):
+        self.corpora[self.corpus_idx].scoreDocs = scoreDocs
+        self.corpora[self.corpus_idx].allTerms = allTerms
+        self.corpora[self.corpus_idx].allDicts = allDicts
+
         # Update the GUI
         self.docstext.configure(state=NORMAL)
         self.termstext.configure(state=NORMAL)
         
         self.docstext.delete(1.0,END)
         self.termstext.delete(1.0,END)
-        self.docstext.insert(END,"Documents: "+str(int(numDocs)))
-        self.termstext.insert(END,"Terms: "+str(int(numTerms)))        
+        self.docstext.insert(END,"Documents: "+str(len(scoreDocs)))
+        self.termstext.insert(END,"Terms: "+str(len(allTerms)))        
                 
         self.docstext.configure(state=DISABLED)
         self.termstext.configure(state=DISABLED)
 
-        if (numDocs>0 and numTerms>0):
+        if (len(scoreDocs)>0 and len(allTerms)>0):
             self.exportbutton.configure(state=NORMAL)
         else:
             self.exportbutton.configure(state=DISABLED)
