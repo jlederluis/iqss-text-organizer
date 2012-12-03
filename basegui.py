@@ -198,9 +198,11 @@ class txtorgui:
 
     def import_files(self, args_dir):
         # self.corpora[self.corpus_idx].import_directory(args_dir['dir'])
-        c = Worker(self, self.corpora[self.corpus_idx], {'import_directory': args_dir['dir']})
-        c.start()
-        print "done!"
+        try:
+            c = Worker(self, self.corpora[self.corpus_idx], {'import_directory': args_dir['dir']})
+            c.start()
+        except AttributeError:
+            self.show_error("Please select a corpus before importing files.")
 
     def open_corpus(self):
         pass
