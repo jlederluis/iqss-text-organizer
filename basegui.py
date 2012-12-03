@@ -1,6 +1,7 @@
 from Tkinter import *
 import tkMessageBox
 import tkFileDialog
+import tkFont
 import math
 import random
 import codecs
@@ -59,26 +60,27 @@ class EntryDialog:
 class txtorgui:
     def __init__(self):
         self.root = Tk()
+        self.customFont = tkFont.Font(family="Verdana", size=10)
         self.queue = Queue.Queue()
         lucene.initVM()
         self.update()
         self.root.title('Text Organizer')
-        f = Frame(self.root, width=800, height=110)
+        f = Frame(self.root, width=800, height=110,bg= "#%02x%02x%02x" % (78,78,78))
         lf = Frame(f, relief=GROOVE, borderwidth=2)
-        Label(lf, text="Corpus").pack(pady=10,padx=10)
+        Label(lf, text="Corpus", font=self.customFont).pack(pady=10,padx=10)
 
         # Top level Menu bar
-        self.menubar = Menu(f)
+        self.menubar = Menu(f, background = "#%02x%02x%02x" % (153,217,234), relief = RAISED)
         menu = Menu(self.menubar, tearoff=0)
         
 
-        self.menubar.add_cascade(label="File", menu=menu)
-        menu.add_command(label="New Corpus", command=self.new_corpus_btn_click)
-        menu.add_command(label="Open Corpus", command=self.open_corpus)
+        self.menubar.add_cascade(label="File", menu=menu, font=self.customFont)
+        menu.add_command(label="New Corpus", command=self.new_corpus_btn_click, font=self.customFont)
+        menu.add_command(label="Open Corpus", command=self.open_corpus, font=self.customFont)
 
         menu_c = Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label="Corpus", menu=menu_c)
-        menu_c.add_command(label="Import Documents...", command=self.import_btn_click)
+        self.menubar.add_cascade(label="Corpus", menu=menu_c, font=self.customFont)
+        menu_c.add_command(label="Import Documents...", command=self.import_btn_click, font=self.customFont)
 
         f.master.config(menu=self.menubar)
         # Items in the left frame
@@ -87,11 +89,11 @@ class txtorgui:
         self.corpuslist.configure(yscrollcommand=corpusscroll.set)
         self.corpuslist.pack(side=LEFT, fill=BOTH, expand=True)
         corpusscroll.pack(side=LEFT, fill=Y)
-        lf.pack(side=LEFT, fill=BOTH, expand = 1,padx=10,pady=10)
-
+        lf.pack(side=LEFT, fill=BOTH, expand = 1,padx=10,pady=10)        
+      
         # Items in the center frame
         cf = Frame(f, relief=GROOVE, borderwidth=2)
-        Label(cf, text="Metadata").pack(pady=10,padx=10)
+        Label(cf, text="Metadata", font=self.customFont).pack(pady=10,padx=10)
 
         cft = Frame(cf, borderwidth=2)
         cfb = Frame(cf, borderwidth=2)
@@ -108,7 +110,7 @@ class txtorgui:
         self.e.delete(0, END)
         self.e.insert(0, "a default value")
 
-        self.searchbutton = Button(cfb, text="Search",state=DISABLED,command=self.runQuery)
+        self.searchbutton = Button(cfb, text="Search",state=DISABLED,command=self.runQuery, font=self.customFont)
         self.searchbutton.pack(side=LEFT, padx=5, pady=8)
 
         cft.pack(fill=BOTH, expand = 1)
@@ -118,10 +120,10 @@ class txtorgui:
         # Right frame
 
         rf = Frame(f, relief=GROOVE, borderwidth=2)
-        Label(rf, text="Outputs").pack(pady=10,padx=10)
+        Label(rf, text="Outputs", font=self.customFont).pack(pady=10,padx=10)
         self.docstext = Text(rf,height=1,width=20)
         self.termstext = Text(rf,height=1,width=20)
-        self.exportbutton = Button(rf, text="Export TDM",state=DISABLED,command=self.saveTDM)
+        self.exportbutton = Button(rf, text="Export TDM",state=DISABLED,command=self.saveTDM, font=self.customFont)
         self.docstext.insert(END,"Documents: 0")
         self.termstext.insert(END,"Terms: 0")        
 
