@@ -1,17 +1,18 @@
 import Queue
 import threading
 import lucene
+import codecs
 import os
-from . import searchfiles, indexfiles
+from . import searchfiles, indexfiles, indexutils
 
 class Corpus:
     scoreDocs = None
     allTerms = None
     allDicts = None
 
-    def __init__(self, path, fields = None):
+    def __init__(self, path, field_dict = None):
         self.path = path
-        self.fields = [] if fields is None else fields
+        self.field_dict = {} if field_dict is None else field_dict
 
 class Worker(threading.Thread):
 
@@ -41,6 +42,8 @@ class Worker(threading.Thread):
             self.export_TDM(self.action['export_tdm'])
         if "import_directory" in self.action.keys():
             self.import_directory(self.action['import_directory'])
+        if "rebuild_metadata_cache" in self.action.keys():
+            self.rebuild_metadata_cache(*self.action['rebuild_metadata_cache'])
         
 
     def _init_index(self):
@@ -88,3 +91,42 @@ class Worker(threading.Thread):
 
         searchfiles.write_CTM_TDM(self.corpus.scoreDocs, self.corpus.allDicts, self.corpus.allTerms, self.searcher, outfile)
         self.parent.write({'message': "TDM exported successfully!"})
+
+    def rebuild_metadata_cache(self, cache_filename, corpus_directory):
+        index_manager = indexutils.IndexManager(reader=self.reader, searcher=self.searcher)
+        metadata_dict = index_manager.get_fields_and_values()
+
+        # finds the section of the old file to overwrite, and stores the old file in memory
+        old_file = []
+        start = -1
+        stop = -1
+        idx = 0
+        with codecs.open(cache_filename, 'r', encoding='UTF-8') as inf:
+            for idx, line in enumerate(inf):
+                if "CORPUS:" in line and corpus_directory in line:
+                    start = idx
+                elif "CORPUS:" in line and start != -1:
+                    stop = idx
+                old_file.append(line)
+                print idx
+            if stop == -1: stop = idx+1
+        print start, stop
+
+        new_segment = ["CORPUS: " + corpus_directory + '\n']
+        for k in metadata_dict.keys():
+            new_segment.append(k + ": [" + ",".join(metadata_dict[k]) + "]\n")
+
+        if start == -1:
+            new_file = old_file + new_segment
+        else:
+            new_file = old_file[:start] + new_segment + old_file[stop:]
+
+        with codecs.open(cache_filename, 'w', encoding='UTF-8') as outf:
+            for line in new_file:
+                outf.write(line)
+
+        self.parent.write({'rebuild_cache_complete': None})
+        self.parent.write({'message': 'Finished rebuilding cache file.'})
+
+
+

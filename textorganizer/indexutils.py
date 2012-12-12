@@ -2,12 +2,13 @@ from lucene import \
     SimpleFSDirectory, File, IndexReader, Term, Term, IndexWriter, Version, StandardAnalyzer, TermQuery, IndexSearcher, Document, Field
 
 import threading, sys, time, os, csv, re, codecs
+from collections import defaultdict
 
 class IndexManager():
-    def __init__(self,dir_name):
-        self.directory = SimpleFSDirectory(File(dir_name))
-        self.reader = IndexReader.open(self.directory, True)
-        self.searcher = IndexSearcher(self.directory, True)
+    def __init__(self, reader=None, searcher=None, writer=None):
+        self.reader = reader
+        self.searcher = searcher
+        self.writer = writer
 
     def get_broken_index_items(self):
         l = []
@@ -19,7 +20,6 @@ class IndexManager():
         return l
 
     def cleanup_index(self):
-        writer = IndexWriter(self.directory, StandardAnalyzer(Version.LUCENE_CURRENT), False, IndexWriter.MaxFieldLength.LIMITED)
         broken_docs = self.get_broken_index_items()
         print "%s broken links found. Enter 'v' to view, 'd' to delete all index items with broken links, or 'q' to cancel" % (len(broken_docs),)
         while True:
@@ -40,24 +40,22 @@ class IndexManager():
         for d in broken_docs:
             fp = d.get("path")
             print "Deleting", fp
-            writer.deleteDocuments(Term("path",fp))
+            self.writer.deleteDocuments(Term("path",fp))
 
-        writer.close()
+        self.writer.close()
 
 
     def reindex(self, scoreDocs, analyzer):
-        
-        writer = IndexWriter(self.directory, analyzer, False, IndexWriter.MaxFieldLength.LIMITED)
         
         for scoreDoc in scoreDocs:
             doc = self.searcher.doc(scoreDoc.doc)
             filepath = doc.get('path')
             new_doc = self.reassemble_doc(doc,filepath)
-            writer.updateDocument(Term("path",filepath),new_doc,analyzer)
+            self.writer.updateDocument(Term("path",filepath),new_doc,analyzer)
 
         print "Optimizing index..."
-        writer.optimize()
-        writer.close()
+        self.writer.optimize()
+        self.writer.close()
             
     def reassemble_doc(self, lucenedoc, filepath):
 
@@ -86,3 +84,15 @@ class IndexManager():
             return None
 
         return edited_doc
+
+    def get_fields_and_values(self, max_vals = 30):
+        all_fields = defaultdict(set)
+
+        for i in xrange(self.reader.maxDoc()):
+            if self.reader.isDeleted(i): continue
+            doc = self.reader.document(i)
+            for f in doc.getFields():
+                field = Field.cast_(f)
+                if len(all_fields[field.name()]) < max_vals: all_fields[field.name()].add(field.stringValue())
+
+        return dict(all_fields)

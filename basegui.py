@@ -59,6 +59,9 @@ class EntryDialog:
 
 class txtorgui:
     def __init__(self):
+
+        self.cache_file = os.path.join(os.path.dirname(__file__), "available_indices_gui")
+
         self.root = Tk()
         self.customFont = tkFont.Font(family="Verdana", size=10)
         self.queue = Queue.Queue()
@@ -67,7 +70,7 @@ class txtorgui:
         self.root.title('Text Organizer')
         f = Frame(self.root, width=800, height=110,bg= "#%02x%02x%02x" % (78,78,78))
         lf = Frame(f, relief=GROOVE, borderwidth=2)
-        Label(lf, text="Corpus", font=self.customFont).pack(pady=10,padx=10)
+        Label(lf, text="Corpus", font=self.customFont).pack(pady=2,padx=2)
 
         # Top level Menu bar
         self.menubar = Menu(f, background = "#%02x%02x%02x" % (153,217,234), relief = RAISED)
@@ -81,6 +84,7 @@ class txtorgui:
         menu_c = Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Corpus", menu=menu_c, font=self.customFont)
         menu_c.add_command(label="Import Documents...", command=self.import_btn_click, font=self.customFont)
+        menu_c.add_command(label="Rebuild Index File...", command=self.rebuild_btn_click, font=self.customFont)
 
         f.master.config(menu=self.menubar)
         # Items in the left frame
@@ -93,16 +97,29 @@ class txtorgui:
       
         # Items in the center frame
         cf = Frame(f, relief=GROOVE, borderwidth=2)
-        Label(cf, text="Metadata", font=self.customFont).pack(pady=10,padx=10)
+        Label(cf, text="Metadata", font=self.customFont).pack(pady=2,padx=2)
 
         cft = Frame(cf, borderwidth=2)
         cfb = Frame(cf, borderwidth=2)
 
-        self.mdlist = Listbox(cft, height=8, width=15, selectmode=MULTIPLE, exportselection=False)
-        scroll = Scrollbar(cft, command=self.mdlist.yview)
+        
+        field_frame = Frame(cft, borderwidth=2)
+        field_label = Label(field_frame, text="Fields", font=self.customFont).pack(pady=2,padx=2)
+        self.mdlist = Listbox(field_frame, height=8, width=15, selectmode=SINGLE, exportselection=False)
+        scroll = Scrollbar(field_frame, command=self.mdlist.yview)
         self.mdlist.configure(yscrollcommand=scroll.set)
         self.mdlist.pack(side=LEFT,fill=BOTH,expand=True)
         scroll.pack(side=LEFT,fill=Y)
+        field_frame.pack(side = LEFT, fill=BOTH, expand = True)
+
+        val_frame = Frame(cft, borderwidth=2)
+        val_label = Label(val_frame, text="Values", font=self.customFont).pack(pady=2,padx=2)
+        self.mdvallist = Listbox(val_frame, height=8, width=15, selectmode=NONE, exportselection=False)
+        val_scroll = Scrollbar(val_frame, command=self.mdvallist.yview)
+        self.mdvallist.configure(yscrollcommand=val_scroll.set)
+        self.mdvallist.pack(side=LEFT,fill=BOTH,padx=10,expand=True)
+        val_scroll.pack(side=LEFT,fill=Y)
+        val_frame.pack(side = LEFT, fill=BOTH, expand = True)
 
         self.e = Entry(cfb,state=DISABLED)
         self.e.pack(side=LEFT,fill=X,expand=1)
@@ -120,7 +137,7 @@ class txtorgui:
         # Right frame
 
         rf = Frame(f, relief=GROOVE, borderwidth=2)
-        Label(rf, text="Outputs", font=self.customFont).pack(pady=10,padx=10)
+        Label(rf, text="Outputs", font=self.customFont).pack(pady=2,padx=2)
         self.docstext = Text(rf,height=1,width=20)
         self.termstext = Text(rf,height=1,width=20)
         self.exportbutton = Button(rf, text="Export TDM",state=DISABLED,command=self.saveTDM, font=self.customFont)
@@ -140,8 +157,8 @@ class txtorgui:
 
         # set up event handling
 
-        self.corpuslist.bind('<ButtonRelease-1>', lambda x: self.updateMetadata())
-
+        self.corpuslist.bind('<ButtonRelease-1>', lambda x: self.update_md_fields())
+        self.mdlist.bind('<ButtonRelease-1>', lambda x: self.update_md_values())
         # populate fields and run the gui
         
         self.corpora = []
@@ -163,6 +180,8 @@ class txtorgui:
                     self.show_error(line['error'])
                 if 'message' in line.keys():
                     self.show_message(line['message'])
+                if 'rebuild_cache_complete' in line.keys():
+                    self.updateCorpus()
 
         except Queue.Empty:
             pass
@@ -190,13 +209,17 @@ class txtorgui:
         if good_corpus_name == "": return
 
         new_index_path = os.path.join(dir_name, good_corpus_name)
-        with codecs.open(os.path.join(os.path.dirname(__file__), "available_indices_gui"), 'a', encoding='UTF-8') as outf:
-            outf.write(new_index_path+"{}\n")
-        self.updateCorpus()
+        c = Corpus(new_index_path)
+        w = Worker(self, c, {'rebuild_metadata_cache': (self.cache_file, c.path)})
+        w.start()
 
     def import_btn_click(self):
         d = ImportDialog(self.root, self.import_files)
         self.root.wait_window(d.top)
+
+    def rebuild_btn_click(self):
+        c = Worker(self, self.corpora[self.corpus_idx], {'rebuild_metadata_cache': (self.cache_file, self.corpora[self.corpus_idx].path)})
+        c.start()
 
     def import_files(self, args_dir):
         # self.corpora[self.corpus_idx].import_directory(args_dir['dir'])
@@ -207,23 +230,56 @@ class txtorgui:
             self.show_error("Please select a corpus before importing files.")
 
     def open_corpus(self):
-        pass
+        dir_name = tkFileDialog.askdirectory(parent=self.root ,title="Choose an existing Lucene index...")
+        if dir_name == "" or dir_name == ():
+            return
+
+        if not os.path.isfile(os.path.join(dir_name, 'segments.gen')):
+            self.show_error('Selected directory is not a Lucene index. Choose an existing index or create a new index with File + "New Corpus".')
+            return
+
+        c = Corpus(dir_name)
+        w = Worker(self, c, {'rebuild_metadata_cache': (self.cache_file, c.path)})
+        w.start()
+
 
     def updateCorpus(self):
         """update the list of items in the corpus"""
         print "update corpus list"
         self.corpora = []
         self.corpuslist.delete(0, END)
-        print os.path.dirname(__file__)
-        with codecs.open(os.path.join(os.path.dirname(__file__), "available_indices_gui"), encoding='UTF-8') as inf:
-            for line in inf:
-                parse_re = re.compile(r'(^.*)\{(.*)\}$')
-                if parse_re.search(line) is None: continue
-                c = Corpus(parse_re.search(line).group(1).strip(), fields = parse_re.search(line).group(2).split(','))
-                self.corpora.append(c)
-                self.corpuslist.insert(END, c.path)
+        corpus_count = 0
+        parse_re = re.compile(r'^(.+):\ *(.+)$')
+        cname = None
+        if os.path.isfile(self.cache_file):
+            with codecs.open(self.cache_file, encoding='UTF-8') as inf:
+                for line in inf:
+                    if line.strip() == "": 
+                        continue
+                    elif line.startswith("CORPUS:"):
+                        if corpus_count > 0:
+                            c = Corpus(cname, field_dict = cfields)
+                            self.corpora.append(c)
+                            self.corpuslist.insert(END, c.path)
+                        cname = line.split("CORPUS:")[1].strip()
+                        cfields = {}
+                        corpus_count += 1 
+                    elif parse_re.match(line):
+                        m = parse_re.match(line)
+                        cfields[m.group(1).strip()] = [x.strip('[] \n') for x in m.group(2).split(',')]
+                    else:
+                        print "Corrupted line found in cache file: ", line
+                # add in the last corpus
+                if cname is not None:
+                    c = Corpus(cname, field_dict = cfields)
+                    self.corpora.append(c)
+                    self.corpuslist.insert(END, c.path)
+                
+                
         if len(self.corpora) == 0:
-            self.write({'error': 'Corrupt available_indices_gui file. Please make sure each line has the format "filepath{field1,field2,...}"'})
+            self.write({'error': 'Corrupt or missing cache file. Please create a new corpus or open an existing one using the \"File\" menu.'})
+            with codecs.open(self.cache_file, 'w', encoding='UTF-8') as outf:
+                pass
             
     def getCorpus(self):        
         """return the index of selected items within self.corpora. Not strictly necessary since self.corpora should be in the 
@@ -240,7 +296,7 @@ class txtorgui:
         elif len(selected_corpora) == 1:
             return selected_corpora[0]
             
-    def updateMetadata(self):
+    def update_md_fields(self):
         """update the metadata field to reflect the tags from the selected corpus"""                
 
         self.corpus_idx = self.getCorpus()
@@ -248,7 +304,9 @@ class txtorgui:
             return
 
         self.mdlist.delete(0,END)
-        for item in self.corpora[self.corpus_idx].fields:
+        self.mdvallist.delete(0,END)
+
+        for item in self.corpora[self.corpus_idx].field_dict.keys():
             self.mdlist.insert(END, item)
         
         # enable clicking on these
@@ -258,6 +316,14 @@ class txtorgui:
         self.receive_query_results([], [], [])
         print "leaving update metadata"
         
+    def update_md_values(self):
+        selected_field_idx = self.mdlist.curselection()
+        self.mdvallist.delete(0, END)
+        if len(selected_field_idx) == 0: return
+        selected_field = self.mdlist.get(selected_field_idx)
+        for x in self.corpora[self.corpus_idx].field_dict[selected_field]:
+            self.mdvallist.insert(END, x)
+
     def saveTDM(self):        
         """pop up a dialog to save the TDM"""
         print "saveTDM"                        
