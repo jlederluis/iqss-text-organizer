@@ -81,10 +81,11 @@ class txtorgui:
         menu.add_command(label="New Corpus", command=self.new_corpus_btn_click, font=self.customFont)
         menu.add_command(label="Open Corpus", command=self.open_corpus, font=self.customFont)
 
-        menu_c = Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label="Corpus", menu=menu_c, font=self.customFont)
-        menu_c.add_command(label="Import Documents...", command=self.import_btn_click, font=self.customFont)
-        menu_c.add_command(label="Rebuild Index File...", command=self.rebuild_btn_click, font=self.customFont)
+        self.menu_c = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Corpus", menu=self.menu_c, font=self.customFont)
+        self.menu_c.add_command(label="Import Documents...", command=self.import_btn_click, font=self.customFont, state=DISABLED)
+        self.menu_c.add_command(label="Rebuild Index File...", command=self.rebuild_btn_click, font=self.customFont, state=DISABLED)
+
 
         f.master.config(menu=self.menubar)
         # Items in the left frame
@@ -114,7 +115,7 @@ class txtorgui:
 
         val_frame = Frame(cft, borderwidth=2)
         val_label = Label(val_frame, text="Values", font=self.customFont).pack(pady=2,padx=2)
-        self.mdvallist = Listbox(val_frame, height=8, width=15, selectmode=NONE, exportselection=False)
+        self.mdvallist = Listbox(val_frame, height=8, width=15, selectmode=BROWSE, exportselection=False)
         val_scroll = Scrollbar(val_frame, command=self.mdvallist.yview)
         self.mdvallist.configure(yscrollcommand=val_scroll.set)
         self.mdvallist.pack(side=LEFT,fill=BOTH,padx=10,expand=True)
@@ -314,7 +315,13 @@ class txtorgui:
         self.e.configure(state=NORMAL)
 
         self.receive_query_results([], [], [])
-        print "leaving update metadata"
+        
+        # enable the Corpus menu
+        for x in xrange(100):
+            try:
+                self.menu_c.entryconfig(x, state=NORMAL)
+            except:
+                break
         
     def update_md_values(self):
         selected_field_idx = self.mdlist.curselection()
