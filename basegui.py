@@ -35,7 +35,7 @@ class ImportDialog:
             self.callback({'dir': dir_name})
             
         elif self.choice_var.get() == 2:
-            file_name =  tkFileDialog.askopenfilename(parent=self.parent.root ,title="Choose a CSV file containing filepaths and metadata...")
+            file_name =  tkFileDialog.askopenfilename(parent=self.top ,title="Choose a CSV file containing filepaths and metadata...")
             if file_name == "" or file_name == ():
                 return
             self.callback({'file': file_name})
@@ -219,14 +219,18 @@ class txtorgui:
         self.root.wait_window(d.top)
 
     def rebuild_btn_click(self):
+        print "rebuilding", self.corpus_idx
         c = Worker(self, self.corpora[self.corpus_idx], {'rebuild_metadata_cache': (self.cache_file, self.corpora[self.corpus_idx].path)})
         c.start()
 
     def import_files(self, args_dir):
-        # self.corpora[self.corpus_idx].import_directory(args_dir['dir'])
         try:
-            c = Worker(self, self.corpora[self.corpus_idx], {'import_directory': args_dir['dir']})
-            c.start()
+            if 'dir' in args_dir:
+                c = Worker(self, self.corpora[self.corpus_idx], {'import_directory': args_dir['dir']})
+                c.start()
+            elif 'file' in args_dir:
+                c = Worker(self, self.corpora[self.corpus_idx], {'import_csv': args_dir['file']})
+                c.start()
         except AttributeError:
             self.show_error("Please select a corpus before importing files.")
 

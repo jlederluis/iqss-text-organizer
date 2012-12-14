@@ -3,7 +3,7 @@ import threading
 import lucene
 import codecs
 import os
-from . import searchfiles, indexfiles, indexutils
+from . import searchfiles, indexfiles, indexutils, addmetadata
 
 class Corpus:
     scoreDocs = None
@@ -42,7 +42,10 @@ class Worker(threading.Thread):
             self.export_TDM(self.action['export_tdm'])
         if "import_directory" in self.action.keys():
             self.import_directory(self.action['import_directory'])
+        if "import_csv" in self.action.keys():
+            self.import_csv(self.action['import_csv'])
         if "rebuild_metadata_cache" in self.action.keys():
+            print self.action['rebuild_metadata_cache']
             self.rebuild_metadata_cache(*self.action['rebuild_metadata_cache'])
         
 
@@ -64,9 +67,16 @@ class Worker(threading.Thread):
         self.reader = lucene.IndexReader.open(self.lucene_index, True)
         self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
 
+
+
     def import_directory(self, dirname):
         indexfiles.IndexFiles(dirname, self.corpus.path, self.analyzer)
 
+    def import_csv(self, csv_file):
+        writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+        changed_rows = addmetadata.add_metadata_from_csv(self.searcher, self.reader, writer, csv_file, new_files=True)
+        writer.close()
+        self.parent.write({'message': "CSV import complete: %s rows added." % (changed_rows,)})
 
     def run_searcher(self, command):
         try:
@@ -95,7 +105,7 @@ class Worker(threading.Thread):
     def rebuild_metadata_cache(self, cache_filename, corpus_directory):
         index_manager = indexutils.IndexManager(reader=self.reader, searcher=self.searcher)
         metadata_dict = index_manager.get_fields_and_values()
-
+        print "got here"
         # finds the section of the old file to overwrite, and stores the old file in memory
         old_file = []
         start = -1
@@ -103,9 +113,11 @@ class Worker(threading.Thread):
         idx = 0
         with codecs.open(cache_filename, 'r', encoding='UTF-8') as inf:
             for idx, line in enumerate(inf):
-                if "CORPUS:" in line and corpus_directory in line:
+                if "CORPUS:" in line and line.strip().endswith(corpus_directory):
+                    print "set start"
                     start = idx
-                elif "CORPUS:" in line and start != -1:
+                elif "CORPUS:" in line and start != -1 and stop == -1:
+                    print "set end"
                     stop = idx
                 old_file.append(line)
                 print idx

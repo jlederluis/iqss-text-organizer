@@ -77,6 +77,7 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
     csvreader = csv.reader(codecs.open(csvfile,encoding='UTF-8'),delimiter=',',quotechar='"')
     failed = False
 
+    successful_rows = 0
     for count,line in enumerate(csvreader):
 
         # read fieldnames from first line. May want to alert user if first line doesn't seem to be fieldnames
@@ -104,18 +105,23 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
         else:
             for scoreDoc in scoreDocs:
                 print "Updating document",filepath,"..."
+                successful_rows += 1
                 old_doc = searcher.doc(scoreDoc.doc)
                 edited_doc = add_metadata_to_doc(old_doc,fieldnames,line[1:])
                 if edited_doc is None: 
                     continue
 
                 writer.updateDocument(Term("path",filepath),edited_doc)
+            
 
     print "Optimizing index..."
     writer.optimize()
 
     if failed:
         print "Could not locate index entries for some paths. Use txtorg -a [directory] to add files to index before adding metadata."
+
+    # return the number of rows changed
+    return successful_rows
 
 # def update_fieldname_index(available_attributes_filename, index_path, fieldnames):
 #     lines = []

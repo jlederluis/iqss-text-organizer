@@ -12,17 +12,6 @@ resulting Lucene index will be placed in the current directory and called
 'index'.
 """
 
-class Ticker(object):
-
-    def __init__(self):
-        self.tick = True
-
-    def run(self):
-        while self.tick:
-            sys.stdout.write('.')
-            sys.stdout.flush()
-            time.sleep(1.0)
-
 class IndexFiles(object):
     """Usage: python IndexFiles <doc_directory>"""
 
@@ -37,12 +26,10 @@ class IndexFiles(object):
         writer.setMaxFieldLength(1048576)
         print 'document dir is', root
         self.indexDocs(root, writer)
-        ticker = Ticker()
+
         print 'optimizing index',
-        threading.Thread(target=ticker.run).start()
         writer.optimize()
         writer.close()
-        ticker.tick = False
         print 'done'       
 
     def indexDocs(self, root, writer):
