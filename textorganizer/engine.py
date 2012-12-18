@@ -44,6 +44,8 @@ class Worker(threading.Thread):
             self.import_directory(self.action['import_directory'])
         if "import_csv" in self.action.keys():
             self.import_csv(self.action['import_csv'])
+        if "import_csv_with_content" in self.action.keys():
+            self.import_csv_with_content(*self.action['import_csv_with_content'])
         if "rebuild_metadata_cache" in self.action.keys():
             print self.action['rebuild_metadata_cache']
             self.rebuild_metadata_cache(*self.action['rebuild_metadata_cache'])
@@ -77,6 +79,12 @@ class Worker(threading.Thread):
         changed_rows = addmetadata.add_metadata_from_csv(self.searcher, self.reader, writer, csv_file, new_files=True)
         writer.close()
         self.parent.write({'message': "CSV import complete: %s rows added." % (changed_rows,)})
+
+    def import_csv_with_content(self, csv_file, content_field):
+        writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+        changed_rows = addmetadata.add_metadata_and_content_from_csv(self.searcher, self.reader, writer, csv_file, content_field)
+        writer.close()
+        self.parent.write({'message': "CSV import complete: %s rows added." % (changed_rows,)})        
 
     def run_searcher(self, command):
         try:
@@ -126,7 +134,9 @@ class Worker(threading.Thread):
 
         new_segment = ["CORPUS: " + corpus_directory + '\n']
         for k in metadata_dict.keys():
-            new_segment.append(k + ": [" + ",".join(metadata_dict[k]) + "]\n")
+            metadata_dict[k] = metadata_dict[k]
+            # sanitize various characters from input. 
+            new_segment.append(k + ": [" + "|".join(metadata_dict[k]).replace('\n','').replace(']','').replace('[','').replace(':','') + "]\n")
 
         if start == -1:
             new_file = old_file + new_segment

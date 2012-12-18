@@ -8,6 +8,7 @@ import codecs
 import os
 import time
 import re
+import csv
 from textorganizer.engine import Corpus, Worker
 import Queue
 import lucene
@@ -19,10 +20,9 @@ class ImportDialog:
         self.callback = callback
         top = self.top = Toplevel(parent)
         self.choice_var = IntVar()
-        rb1 = Radiobutton(top, text="Import an entire directory", variable=self.choice_var, value=1)
-        rb1.select()
-        rb1.pack(anchor=W)
-        Radiobutton(top, text="Import from a CSV file (with metadata)", variable=self.choice_var, value=2).pack(anchor=W)
+        Radiobutton(top, text="Import an entire directory", variable=self.choice_var, value=1).pack(anchor=W)
+        Radiobutton(top, text="Import from a CSV file (not including content)", variable=self.choice_var, value=2).pack(anchor=W)
+        Radiobutton(top, text="Import from a CSV file (including content)", variable=self.choice_var, value=3).pack(anchor=W)
         b = Button(top, text="OK", command=self.ok)
         b.pack(pady=5)
 
@@ -40,8 +40,39 @@ class ImportDialog:
                 return
             self.callback({'file': file_name})
 
+        elif self.choice_var.get() == 3:
+            file_name =  tkFileDialog.askopenfilename(parent=self.top ,title="Choose a CSV file containing metadata and full contents...")
+            if file_name == "" or file_name == ():
+                return
+            self.callback({'full_file': file_name})            
+
         self.top.destroy()
+
+
+class FieldSelectDialog:
+    def __init__(self, csv_file, parent, callback):
         
+        self.parent = parent
+        self.callback = callback
+        top = self.top = Toplevel(parent)
+        self.choice_var = IntVar()
+
+        print "first"
+        with codecs.open(csv_file, 'r', encoding='UTF-8') as inf:
+            csvreader = csv.reader(inf, delimiter=',', quotechar='"')
+            self.fieldnames = csvreader.next()
+        print "got here"
+
+        for idx, f in enumerate(self.fieldnames):
+            Radiobutton(top, text=f, variable=self.choice_var, value=idx).pack(anchor=W)
+
+        b = Button(top, text="OK", command=self.ok)
+        b.pack(pady=5)
+
+    def ok(self):
+        self.callback(self.fieldnames[self.choice_var.get()])            
+        self.top.destroy()
+
 
 class EntryDialog:
     def __init__(self, parent, callback, label="Enter a value:"):
@@ -201,7 +232,7 @@ class txtorgui:
         if dir_name == "" or dir_name == ():
             return
 
-        d = EntryDialog(self.root, partial(self.make_new_corpus, dir_name), label="Please choose a name for the index")
+        d = FieldSelectDialog(self.root, partial(self.make_new_corpus, dir_name), label="Please choose a name for the index")
         self.root.wait_window(d.top)
 
     def make_new_corpus(self,  dir_name, corpus_name):
@@ -231,8 +262,16 @@ class txtorgui:
             elif 'file' in args_dir:
                 c = Worker(self, self.corpora[self.corpus_idx], {'import_csv': args_dir['file']})
                 c.start()
+            elif 'full_file' in args_dir:
+                d = FieldSelectDialog(args_dir['full_file'], self.root, partial(self.import_csv_with_content, args_dir['full_file']))
+                self.root.wait_window(d.top)
         except AttributeError:
             self.show_error("Please select a corpus before importing files.")
+
+    def import_csv_with_content(self, csv_file, content_field):
+        if content_field is None: return
+        c = Worker(self, self.corpora[self.corpus_idx], {'import_csv_with_content': (csv_file, content_field)})
+        c.start()
 
     def open_corpus(self):
         dir_name = tkFileDialog.askdirectory(parent=self.root ,title="Choose an existing Lucene index...")
@@ -271,7 +310,7 @@ class txtorgui:
                         corpus_count += 1 
                     elif parse_re.match(line):
                         m = parse_re.match(line)
-                        cfields[m.group(1).strip()] = [x.strip('[] \n') for x in m.group(2).split(',')]
+                        cfields[m.group(1).strip()] = [x.strip('[] \n') for x in m.group(2).split('|')]
                     else:
                         print "Corrupted line found in cache file: ", line
                 # add in the last corpus

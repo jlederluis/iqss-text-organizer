@@ -73,8 +73,20 @@ def add_new_document_with_metadata(writer,filepath,fieldnames,values):
 
     writer.addDocument(doc)
 
+def add_new_document_with_metadata_and_content(writer, fieldnames, values, content_field):
+    doc = Document()
+    # add name, path, and contents fields
+
+    for idx, name in enumerate(fieldnames):
+        if name == content_field: 
+            doc.add(Field(fieldnames[idx].lower(),values[idx].lower(),Field.Store.YES,Field.Index.ANALYZED,Field.TermVector.YES))
+        else:
+            doc.add(Field(fieldnames[idx].lower(),values[idx].lower(),Field.Store.YES,Field.Index.NOT_ANALYZED))
+
+    writer.addDocument(doc)
+
 def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
-    csvreader = csv.reader(codecs.open(csvfile,encoding='UTF-8'),delimiter=',',quotechar='"')
+    csvreader = csv.reader(codecs.open(csvfile, encoding='UTF-8'), delimiter=',', quotechar='"')
     failed = False
 
     successful_rows = 0
@@ -113,20 +125,30 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
 
                 writer.updateDocument(Term("path",filepath),edited_doc)
             
-
-    print "Optimizing index..."
     writer.optimize()
-
-    if failed:
-        print "Could not locate index entries for some paths. Use txtorg -a [directory] to add files to index before adding metadata."
 
     # return the number of rows changed
     return successful_rows
 
-# def update_fieldname_index(available_attributes_filename, index_path, fieldnames):
-#     lines = []
-#     with codecs.open(available_attributes_filename, encoding='UTF-8','r') as inf:
-#         for line in inf:
-#             if line.startswith(index_path):
-                
 
+def add_metadata_and_content_from_csv(searcher, reader, writer, csvfile, content_field):
+    csvreader = csv.reader(codecs.open(csvfile, encoding='UTF-8'),delimiter=',',quotechar='"')
+
+    successful_rows = 0
+    for count,line in enumerate(csvreader):
+
+        # read fieldnames from first line. May want to alert user if first line doesn't seem to be fieldnames
+        if count == 0:
+            fieldnames = line
+            if content_field not in fieldnames: raise ValueError
+            continue
+
+        add_new_document_with_metadata_and_content(writer, fieldnames, line, content_field)
+        successful_rows += 1
+            
+
+    print "Optimizing index..."
+    writer.optimize()
+
+    # return the number of rows changed
+    return successful_rows
