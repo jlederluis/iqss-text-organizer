@@ -232,7 +232,7 @@ class txtorgui:
         if dir_name == "" or dir_name == ():
             return
 
-        d = FieldSelectDialog(self.root, partial(self.make_new_corpus, dir_name), label="Please choose a name for the index")
+        d = EntryDialog(self.root, partial(self.make_new_corpus, dir_name), label="Please choose a name for the index")
         self.root.wait_window(d.top)
 
     def make_new_corpus(self,  dir_name, corpus_name):
