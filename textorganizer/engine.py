@@ -9,10 +9,13 @@ class Corpus:
     scoreDocs = None
     allTerms = None
     allDicts = None
+    
 
     def __init__(self, path, field_dict = None):
         self.path = path
         self.field_dict = {} if field_dict is None else field_dict
+        self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+        self.analyzer_name = "StandardAnalyzer"
 
 class Worker(threading.Thread):
 
@@ -58,7 +61,7 @@ class Worker(threading.Thread):
         try:
             searcher = lucene.IndexSearcher(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), True)
         except lucene.JavaError:
-            analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+            analyzer = self.corpus.analyzer
             writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), analyzer, True, lucene.IndexWriter.MaxFieldLength.LIMITED)
             writer.setMaxFieldLength(1048576)
             writer.optimize()
@@ -67,7 +70,7 @@ class Worker(threading.Thread):
         self.lucene_index = lucene.SimpleFSDirectory(lucene.File(self.corpus.path))
         self.searcher = lucene.IndexSearcher(self.lucene_index, True)
         self.reader = lucene.IndexReader.open(self.lucene_index, True)
-        self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+        self.analyzer = self.corpus.analyzer
 
 
 
@@ -113,7 +116,6 @@ class Worker(threading.Thread):
     def rebuild_metadata_cache(self, cache_filename, corpus_directory):
         index_manager = indexutils.IndexManager(reader=self.reader, searcher=self.searcher)
         metadata_dict = index_manager.get_fields_and_values()
-        print "got here"
         # finds the section of the old file to overwrite, and stores the old file in memory
         old_file = []
         start = -1
@@ -122,15 +124,11 @@ class Worker(threading.Thread):
         with codecs.open(cache_filename, 'r', encoding='UTF-8') as inf:
             for idx, line in enumerate(inf):
                 if "CORPUS:" in line and line.strip().endswith(corpus_directory):
-                    print "set start"
                     start = idx
                 elif "CORPUS:" in line and start != -1 and stop == -1:
-                    print "set end"
                     stop = idx
                 old_file.append(line)
-                print idx
             if stop == -1: stop = idx+1
-        print start, stop
 
         new_segment = ["CORPUS: " + corpus_directory + '\n']
         for k in metadata_dict.keys():
@@ -149,6 +147,9 @@ class Worker(threading.Thread):
 
         self.parent.write({'rebuild_cache_complete': None})
         self.parent.write({'message': 'Finished rebuilding cache file.'})
+
+    def change_analyzer(self, new_analyzer):
+        pass
 
 
 

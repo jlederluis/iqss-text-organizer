@@ -88,6 +88,21 @@ class EntryDialog:
         self.callback(self.e.get())
         self.top.destroy()
 
+class StatusBar(Frame):
+
+    def __init__(self, master):
+        Frame.__init__(self, master)
+        self.label = Label(self, bd=1, relief=SUNKEN, anchor=W)
+        self.label.pack(fill=X)
+
+    def set(self, format, *args):
+        self.label.config(text=format % args if args is not None else format)
+        self.label.update_idletasks()
+
+    def clear(self):
+        self.label.config(text="")
+        self.label.update_idletasks()
+
 class txtorgui:
     def __init__(self):
 
@@ -116,9 +131,14 @@ class txtorgui:
         self.menubar.add_cascade(label="Corpus", menu=self.menu_c, font=self.customFont)
         self.menu_c.add_command(label="Import Documents...", command=self.import_btn_click, font=self.customFont, state=DISABLED)
         self.menu_c.add_command(label="Rebuild Index File...", command=self.rebuild_btn_click, font=self.customFont, state=DISABLED)
+        self.menu_c.add_command(label="Change Analyzer...", command=self.change_analyzer, font=self.customFont, state=DISABLED)
 
 
         f.master.config(menu=self.menubar)
+
+        self.status = StatusBar(f)
+        self.status.pack(side=BOTTOM, fill=X)
+
         # Items in the left frame
         self.corpuslist = Listbox(lf, width=40,exportselection=False)
         corpusscroll = Scrollbar(lf, command=self.corpuslist.yview)
@@ -213,6 +233,7 @@ class txtorgui:
                 if 'message' in line.keys():
                     self.show_message(line['message'])
                 if 'rebuild_cache_complete' in line.keys():
+                    self.status.set("Finished rebuilding metadata cache!")
                     self.updateCorpus()
 
         except Queue.Empty:
@@ -250,9 +271,13 @@ class txtorgui:
         self.root.wait_window(d.top)
 
     def rebuild_btn_click(self):
-        print "rebuilding", self.corpus_idx
+        self.status.set("Rebuilding Metadata Cache... This could take a while depending on the size of the corpus.")
         c = Worker(self, self.corpora[self.corpus_idx], {'rebuild_metadata_cache': (self.cache_file, self.corpora[self.corpus_idx].path)})
         c.start()
+
+    def change_analyzer(self):
+        pass
+
 
     def import_files(self, args_dir):
         try:
@@ -290,6 +315,7 @@ class txtorgui:
     def updateCorpus(self):
         """update the list of items in the corpus"""
         print "update corpus list"
+        self.status.set("Loading corpora from %s", self.cache_file)
         self.corpora = []
         self.corpuslist.delete(0, END)
         corpus_count = 0
@@ -318,6 +344,7 @@ class txtorgui:
                     c = Corpus(cname, field_dict = cfields)
                     self.corpora.append(c)
                     self.corpuslist.insert(END, c.path)
+        self.status.set("Corpora loaded from %s", self.cache_file)
                 
                 
         if len(self.corpora) == 0:
@@ -353,6 +380,7 @@ class txtorgui:
         for item in self.corpora[self.corpus_idx].field_dict.keys():
             self.mdlist.insert(END, item)
         
+        self.status.set("Corpus loaded: %i metadata fields found. Using analyzer %s", len(self.corpora[self.corpus_idx].field_dict.keys()), self.corpora[self.corpus_idx].analyzer_name)
         # enable clicking on these
         self.searchbutton.configure(state=NORMAL)
         self.e.configure(state=NORMAL)
@@ -376,7 +404,7 @@ class txtorgui:
 
     def saveTDM(self):        
         """pop up a dialog to save the TDM"""
-        print "saveTDM"                        
+        print "saveTDM"
 
         myFormats = [
             ('Comma Separated Variable','*.csv')

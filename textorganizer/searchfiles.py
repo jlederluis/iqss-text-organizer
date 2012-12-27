@@ -30,7 +30,7 @@ def run(searcher, analyzer, reader, command):
     if command == 'all':
         query = MatchAllDocsQuery()
     elif m is None:
-        query = QueryParser(Version.LUCENE_CURRENT, "contents",analyzer).parse(command)
+        query = QueryParser(Version.LUCENE_CURRENT, "contents", analyzer).parse(command)
     else:
         """make a TermQuery with the fieldname and value"""
         fieldname = m.group(1)
