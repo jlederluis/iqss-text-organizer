@@ -8,8 +8,8 @@ from textorganizer import stemmingtools
 
 class analyzergui:
     def __init__(self):
-        self.curlucene = lucene.initVM()        
-        self.root = Tk()
+        self.curlucene = lucene.initVM()
+        self.root = Toplevel()
         self.root.title('txtorg')
 
         self.analyzers = [WhitespaceAnalyzer(),
@@ -152,6 +152,3 @@ class analyzergui:
             self.updateMetadata()            
             self.current = now
         self.after(250, self.poll)
-
-                    
-top = analyzergui()

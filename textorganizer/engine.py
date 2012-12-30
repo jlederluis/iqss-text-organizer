@@ -15,7 +15,7 @@ class Corpus:
         self.path = path
         self.field_dict = {} if field_dict is None else field_dict
         self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
-        self.analyzer_name = "StandardAnalyzer"
+        self.analyzer_str = "StandardAnalyzer"
 
 class Worker(threading.Thread):
 
@@ -109,6 +109,7 @@ class Worker(threading.Thread):
     def export_TDM(self, outfile):
         if self.corpus.scoreDocs is None or self.corpus.allTerms is None or self.corpus.allDicts is None:
             self.parent.write({'error': "No documents selected, please run a query before exporting a TDM."})
+            return
 
         searchfiles.write_CTM_TDM(self.corpus.scoreDocs, self.corpus.allDicts, self.corpus.allTerms, self.searcher, outfile)
         self.parent.write({'message': "TDM exported successfully!"})
@@ -148,8 +149,10 @@ class Worker(threading.Thread):
         self.parent.write({'rebuild_cache_complete': None})
         self.parent.write({'message': 'Finished rebuilding cache file.'})
 
-    def change_analyzer(self, new_analyzer):
-        pass
+    def change_analyzer(self, new_analyzer_str, new_analyzer):
+        # this isn't enough right now. we need to nail down the issue with content fields not necessarily being in "contents"
+        self.corpus.analyzer_str = new_analyzer_str
+        self.corpus.analyzer = new_analyzer
 
 
 

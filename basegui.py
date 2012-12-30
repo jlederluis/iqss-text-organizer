@@ -10,6 +10,7 @@ import time
 import re
 import csv
 from textorganizer.engine import Corpus, Worker
+from textorganizer.analyzer_chooser import AnalyzerChooser
 import Queue
 import lucene
 from functools import partial
@@ -235,7 +236,8 @@ class txtorgui:
                 if 'rebuild_cache_complete' in line.keys():
                     self.status.set("Finished rebuilding metadata cache!")
                     self.updateCorpus()
-
+                if 'set_analyzer' in line.keys():
+                    self.set_analyzer(*line['set_analyzer'])
         except Queue.Empty:
             pass
 
@@ -276,8 +278,10 @@ class txtorgui:
         c.start()
 
     def change_analyzer(self):
-        pass
+        analyzer_gui = AnalyzerChooser(self)
 
+    def set_analyzer(self, analyzer_str, analyzer):
+        print "setting analyzer to %s" % (analyzer_str,)
 
     def import_files(self, args_dir):
         try:
@@ -380,7 +384,7 @@ class txtorgui:
         for item in self.corpora[self.corpus_idx].field_dict.keys():
             self.mdlist.insert(END, item)
         
-        self.status.set("Corpus loaded: %i metadata fields found. Using analyzer %s", len(self.corpora[self.corpus_idx].field_dict.keys()), self.corpora[self.corpus_idx].analyzer_name)
+        self.status.set("Corpus loaded: %i metadata fields found. Using analyzer %s", len(self.corpora[self.corpus_idx].field_dict.keys()), self.corpora[self.corpus_idx].analyzer_str)
         # enable clicking on these
         self.searchbutton.configure(state=NORMAL)
         self.e.configure(state=NORMAL)
