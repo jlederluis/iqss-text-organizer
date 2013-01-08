@@ -1,3 +1,7 @@
+IMPORTANT NOTE
+==================
+This README applies to an older command-line only version of txtorg. A full-featured GUI is currently in development, so please check back in the coming weeks if your are interested in trying out txtorg!
+
 iqss-text-organizer
 ===================
 
