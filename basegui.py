@@ -238,6 +238,8 @@ class txtorgui:
                     self.updateCorpus()
                 if 'set_analyzer' in line.keys():
                     self.set_analyzer(*line['set_analyzer'])
+                if 'status' in line.keys():
+                    self.status.set(line['status'])
         except Queue.Empty:
             pass
 
@@ -264,7 +266,9 @@ class txtorgui:
         if good_corpus_name == "": return
 
         new_index_path = os.path.join(dir_name, good_corpus_name)
-        c = Corpus(new_index_path)
+
+        # For now, assume it new corpuses use StandardAnalyzer
+        c = Corpus(new_index_path, analyzer_str=None)
         w = Worker(self, c, {'rebuild_metadata_cache': (self.cache_file, c.path)})
         w.start()
 
@@ -281,7 +285,11 @@ class txtorgui:
         analyzer_gui = AnalyzerChooser(self)
 
     def set_analyzer(self, analyzer_str, analyzer):
-        print "setting analyzer to %s" % (analyzer_str,)
+        self.status.set("Rebuilding Index to use analyzer %s... This could take a while depending on the size of the corpus." % (analyzer_str,))
+        self.corpora[self.corpus_idx].analyzer = analyzer
+        self.corpora[self.corpus_idx].analyzer_str = analyzer_str
+        c = Worker(self, self.corpora[self.corpus_idx], {'reindex': None})
+        c.start()
 
     def import_files(self, args_dir):
         try:
@@ -332,12 +340,15 @@ class txtorgui:
                         continue
                     elif line.startswith("CORPUS:"):
                         if corpus_count > 0:
-                            c = Corpus(cname, field_dict = cfields)
+                            c = Corpus(cname, analyzer_str = canalyzer, field_dict = cfields)
                             self.corpora.append(c)
                             self.corpuslist.insert(END, c.path)
                         cname = line.split("CORPUS:")[1].strip()
                         cfields = {}
+                        canalyzer = None
                         corpus_count += 1 
+                    elif line.startswith("_ANALYZER:"):
+                        canalyzer = line.split("_ANALYZER:")[1].strip()
                     elif parse_re.match(line):
                         m = parse_re.match(line)
                         cfields[m.group(1).strip()] = [x.strip('[] \n') for x in m.group(2).split('|')]
@@ -345,7 +356,7 @@ class txtorgui:
                         print "Corrupted line found in cache file: ", line
                 # add in the last corpus
                 if cname is not None:
-                    c = Corpus(cname, field_dict = cfields)
+                    c = Corpus(cname, field_dict = cfields, analyzer_str = canalyzer)
                     self.corpora.append(c)
                     self.corpuslist.insert(END, c.path)
         self.status.set("Corpora loaded from %s", self.cache_file)

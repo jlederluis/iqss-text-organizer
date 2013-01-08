@@ -60,6 +60,9 @@ def add_new_document_with_metadata(writer,filepath,fieldnames,values):
     doc.add(Field("path", os.path.realpath(filepath),
                          Field.Store.YES,
                          Field.Index.NOT_ANALYZED))
+    doc.add(Field("txtorg_id", str(uuid.uuid1()),
+                         Field.Store.YES,
+                         Field.Index.NOT_ANALYZED))
     if len(contents) > 0:
         doc.add(Field("contents", contents,
                              Field.Store.NO,
@@ -75,7 +78,9 @@ def add_new_document_with_metadata(writer,filepath,fieldnames,values):
 
 def add_new_document_with_metadata_and_content(writer, fieldnames, values, content_field):
     doc = Document()
-    # add name, path, and contents fields
+    doc.add(Field("txtorg_id", str(uuid.uuid1()),
+                         Field.Store.YES,
+                         Field.Index.NOT_ANALYZED))
 
     for idx, name in enumerate(fieldnames):
         if name == content_field: 

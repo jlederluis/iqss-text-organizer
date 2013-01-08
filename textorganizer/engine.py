@@ -2,6 +2,7 @@ import Queue
 import threading
 import lucene
 import codecs
+import datetime
 import os
 from . import searchfiles, indexfiles, indexutils, addmetadata
 
@@ -9,13 +10,21 @@ class Corpus:
     scoreDocs = None
     allTerms = None
     allDicts = None
-    
 
-    def __init__(self, path, field_dict = None):
+    def __init__(self, path, analyzer_str = None, field_dict = None):
         self.path = path
         self.field_dict = {} if field_dict is None else field_dict
-        self.analyzer = lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
-        self.analyzer_str = "StandardAnalyzer"
+        if analyzer_str is None: analyzer_str = "StandardAnalyzer"
+
+        self.analyzer_str = analyzer_str
+        self.analyzer = self.get_analyzer_from_str(analyzer_str)
+        
+
+    def get_analyzer_from_str(self, analyzer_str):
+        if analyzer_str == 'StandardAnalyzer':
+            return lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT)
+
+
 
 class Worker(threading.Thread):
 
@@ -50,8 +59,9 @@ class Worker(threading.Thread):
         if "import_csv_with_content" in self.action.keys():
             self.import_csv_with_content(*self.action['import_csv_with_content'])
         if "rebuild_metadata_cache" in self.action.keys():
-            print self.action['rebuild_metadata_cache']
             self.rebuild_metadata_cache(*self.action['rebuild_metadata_cache'])
+        if "reindex" in self.action.keys():
+            self.reindex()
         
 
     def _init_index(self):
@@ -89,9 +99,18 @@ class Worker(threading.Thread):
         writer.close()
         self.parent.write({'message': "CSV import complete: %s rows added." % (changed_rows,)})        
 
+    def reindex(self):
+        writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), self.corpus.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+        indexutils.reindex_all(self.reader, writer, self.corpus.analyzer)
+        writer.optimize()
+        writer.close()
+        self.parent.write({'message': "Reindex successful. Corpus analyzer is now set to %s." % (self.corpus.analyzer_str,)})
+        self.parent.write({'status': "Ready!"})
+
     def run_searcher(self, command):
+        start_time = datetime.datetime.now()
         try:
-            print "Running Lucene query \"%s\"" % (command,)
+            self.parent.write({'status': 'Running Lucene query %s' % (command,)})
             scoreDocs, allTerms, allDicts = searchfiles.run(self.searcher, self.analyzer, self.reader, command)
                 
         except lucene.JavaError as e:
@@ -104,7 +123,9 @@ class Worker(threading.Thread):
             else:
                 raise e
 
+        end_time = datetime.datetime.now()
         self.parent.write({'query_results': (scoreDocs, allTerms, allDicts)})
+        self.parent.write({'status': 'Query completed in %s seconds' % ((end_time - start_time).microseconds*.000001)})
 
     def export_TDM(self, outfile):
         if self.corpus.scoreDocs is None or self.corpus.allTerms is None or self.corpus.allDicts is None:
@@ -115,8 +136,7 @@ class Worker(threading.Thread):
         self.parent.write({'message': "TDM exported successfully!"})
 
     def rebuild_metadata_cache(self, cache_filename, corpus_directory):
-        index_manager = indexutils.IndexManager(reader=self.reader, searcher=self.searcher)
-        metadata_dict = index_manager.get_fields_and_values()
+        metadata_dict = indexutils.get_fields_and_values(self.reader)
         # finds the section of the old file to overwrite, and stores the old file in memory
         old_file = []
         start = -1
@@ -131,7 +151,8 @@ class Worker(threading.Thread):
                 old_file.append(line)
             if stop == -1: stop = idx+1
 
-        new_segment = ["CORPUS: " + corpus_directory + '\n']
+        new_segment = ["CORPUS: " + corpus_directory + '\n', "_ANALYZER: " + self.corpus.analyzer_str +'\n']
+
         for k in metadata_dict.keys():
             metadata_dict[k] = metadata_dict[k]
             # sanitize various characters from input. 
@@ -148,11 +169,3 @@ class Worker(threading.Thread):
 
         self.parent.write({'rebuild_cache_complete': None})
         self.parent.write({'message': 'Finished rebuilding cache file.'})
-
-    def change_analyzer(self, new_analyzer_str, new_analyzer):
-        # this isn't enough right now. we need to nail down the issue with content fields not necessarily being in "contents"
-        self.corpus.analyzer_str = new_analyzer_str
-        self.corpus.analyzer = new_analyzer
-
-
-

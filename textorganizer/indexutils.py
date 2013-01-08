@@ -4,12 +4,51 @@ from lucene import \
 import threading, sys, time, os, csv, re, codecs
 from collections import defaultdict
 
-def reindex_all(self, reader, writer, analyzer):
-    for i in xrange(self.reader.maxDoc()):
+def reindex_all(reader, writer, analyzer):
+    for i in xrange(reader.maxDoc()):
         if reader.isDeleted(i): continue
         doc = reader.document(i)
+        p = doc.get("path")
         pkid = doc.get('txtorg_id')
-        writer.updateDocument(Term("txtorg_id",pkid),doc,analyzer)
+        if p is None:
+            # No filepath specified, just use original document
+            writer.updateDocument(Term("txtorg_id",pkid),doc,analyzer)
+        else:
+            # if a path field is found, try to read the file it points to and add a contents field
+            edited_doc = Document()
+            for f in doc.getFields():
+                edited_doc.add(Field.cast_(f))
+
+            try:
+                inf = open(p)
+                contents = unicode(inf.read(), 'UTF-8')
+                inf.close()
+
+                if len(contents) > 0:
+                    edited_doc.add(Field("contents", contents,
+                                         Field.Store.NO,
+                                         Field.Index.ANALYZED,
+                                         Field.TermVector.YES))
+                else:
+                    print "warning: no content in %s" % filename
+            except:
+                print "Could not read file; skipping"
+            writer.updateDocument(Term("txtorg_id",pkid),edited_doc,analyzer)
+
+
+        
+
+def get_fields_and_values(reader, max_vals = 30):
+    all_fields = defaultdict(set)
+
+    for i in xrange(reader.maxDoc()):
+        if reader.isDeleted(i): continue
+        doc = reader.document(i)
+        for f in doc.getFields():
+            field = Field.cast_(f)
+            if len(all_fields[field.name()]) < max_vals: all_fields[field.name()].add(field.stringValue())
+
+    return dict(all_fields)
 
 # class IndexManager():
 #     def __init__(self, reader=None, searcher=None, writer=None):
@@ -93,15 +132,5 @@ def reindex_all(self, reader, writer, analyzer):
 
 #         return edited_doc
 
-#     def get_fields_and_values(self, max_vals = 30):
-#         all_fields = defaultdict(set)
 
-#         for i in xrange(self.reader.maxDoc()):
-#             if self.reader.isDeleted(i): continue
-#             doc = self.reader.document(i)
-#             for f in doc.getFields():
-#                 field = Field.cast_(f)
-#                 if len(all_fields[field.name()]) < max_vals: all_fields[field.name()].add(field.stringValue())
-
-#         return dict(all_fields)
 

@@ -2,6 +2,7 @@
 
 import sys, os, lucene, threading, time
 from datetime import datetime
+import uuid
 
 """
 This class is loosely based on the Lucene (java implementation) demo class 
@@ -48,6 +49,9 @@ class IndexFiles(object):
                                          lucene.Field.Store.YES,
                                          lucene.Field.Index.NOT_ANALYZED))
                     doc.add(lucene.Field("path", os.path.realpath(path),
+                                         lucene.Field.Store.YES,
+                                         lucene.Field.Index.NOT_ANALYZED))
+                    doc.add(lucene.Field("txtorg_id", str(uuid.uuid1()),
                                          lucene.Field.Store.YES,
                                          lucene.Field.Index.NOT_ANALYZED))
                     if len(contents) > 0:
