@@ -3,6 +3,19 @@ import os
 import sys
 import csv
 import codecs
+import uuid
+
+def unicode_csv_reader(unicode_csv_data, dialect=csv.excel, **kwargs):
+    # csv.py doesn't do Unicode; encode temporarily as UTF-8:
+    csv_reader = csv.reader(utf_8_encoder(unicode_csv_data),
+                            dialect=dialect, **kwargs)
+    for row in csv_reader:
+        # decode UTF-8 back to Unicode, cell by cell:
+        yield [unicode(cell, 'utf-8') for cell in row]
+
+def utf_8_encoder(unicode_csv_data):
+    for line in unicode_csv_data:
+        yield line.encode('utf-8')
 
 def docs_from_filepath(searcher,reader,filepath):
     query = TermQuery(Term("path",filepath))
@@ -91,7 +104,7 @@ def add_new_document_with_metadata_and_content(writer, fieldnames, values, conte
     writer.addDocument(doc)
 
 def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
-    csvreader = csv.reader(codecs.open(csvfile, encoding='UTF-8'), delimiter=',', quotechar='"')
+    csvreader = unicode_csv_reader(codecs.open(csvfile, encoding='UTF-8'), delimiter=',', quotechar='"')
     failed = False
 
     successful_rows = 0
@@ -137,7 +150,7 @@ def add_metadata_from_csv(searcher,reader,writer,csvfile,new_files=False):
 
 
 def add_metadata_and_content_from_csv(searcher, reader, writer, csvfile, content_field):
-    csvreader = csv.reader(codecs.open(csvfile, encoding='UTF-8'),delimiter=',',quotechar='"')
+    csvreader = unicode_csv_reader(codecs.open(csvfile, encoding='UTF-8'),delimiter=',',quotechar='"')
 
     successful_rows = 0
     for count,line in enumerate(csvreader):

@@ -56,6 +56,8 @@ class FieldSelectDialog:
         self.parent = parent
         self.callback = callback
         top = self.top = Toplevel(parent)
+        Label(top, text="Choose the field containing text data to index:").pack()
+
         self.choice_var = IntVar()
 
         print "first"
@@ -307,6 +309,8 @@ class txtorgui:
 
     def import_csv_with_content(self, csv_file, content_field):
         if content_field is None: return
+        self.status.set("Importing CSV; using text field %s" % (content_field,))
+        self.corpora[self.corpus_idx].content_field = content_field
         c = Worker(self, self.corpora[self.corpus_idx], {'import_csv_with_content': (csv_file, content_field)})
         c.start()
 
@@ -340,15 +344,18 @@ class txtorgui:
                         continue
                     elif line.startswith("CORPUS:"):
                         if corpus_count > 0:
-                            c = Corpus(cname, analyzer_str = canalyzer, field_dict = cfields)
+                            c = Corpus(cname, analyzer_str = canalyzer, field_dict = cfields, content_field=ccontent_field)
                             self.corpora.append(c)
                             self.corpuslist.insert(END, c.path)
                         cname = line.split("CORPUS:")[1].strip()
                         cfields = {}
                         canalyzer = None
+                        ccontent_field = None
                         corpus_count += 1 
                     elif line.startswith("_ANALYZER:"):
                         canalyzer = line.split("_ANALYZER:")[1].strip()
+                    elif line.startswith("_CONTENTFIELD:"):
+                        ccontent_field = line.split("_CONTENTFIELD:")[1].strip()
                     elif parse_re.match(line):
                         m = parse_re.match(line)
                         cfields[m.group(1).strip()] = [x.strip('[] \n') for x in m.group(2).split('|')]
@@ -356,7 +363,7 @@ class txtorgui:
                         print "Corrupted line found in cache file: ", line
                 # add in the last corpus
                 if cname is not None:
-                    c = Corpus(cname, field_dict = cfields, analyzer_str = canalyzer)
+                    c = Corpus(cname, field_dict = cfields, analyzer_str = canalyzer, content_field=ccontent_field)
                     self.corpora.append(c)
                     self.corpuslist.insert(END, c.path)
         self.status.set("Corpora loaded from %s", self.cache_file)

@@ -22,15 +22,18 @@ class Ticker(object):
             time.sleep(1.0)
 
 
-def run(searcher, analyzer, reader, command):
+def run(searcher, analyzer, reader, command, contents_field="contents"):
+
+
 
     """check to see whether the user specified a field"""
     m = re.match(r'([a-zA-Z]+):(.*)',command)
-    
+    print command
+    print m
     if command == 'all':
         query = MatchAllDocsQuery()
-    elif m is None:
-        query = QueryParser(Version.LUCENE_CURRENT, "contents", analyzer).parse(command)
+    elif m is None or contents_field in command:
+        query = QueryParser(Version.LUCENE_CURRENT, contents_field, analyzer).parse(command)
     else:
         """make a TermQuery with the fieldname and value"""
         fieldname = m.group(1)
@@ -40,22 +43,20 @@ def run(searcher, analyzer, reader, command):
 
     scoreDocs = searcher.search(query, reader.maxDoc()).scoreDocs
 
-
-
     allDicts = []
     allTerms = set()
 
     for scoreDoc in scoreDocs:
+
         doc = searcher.doc(scoreDoc.doc)
-        vector = reader.getTermFreqVector(scoreDoc.doc,"contents")
+        vector = reader.getTermFreqVector(scoreDoc.doc,contents_field)
         if vector is None: continue
         
         d = dict()
         allTerms = allTerms.union(map(lambda x: x.encode('utf-8'),vector.getTerms()))
         for (t,num) in zip(vector.getTerms(),vector.getTermFrequencies()):
             d[t.encode('utf-8')] = num
-        d["___path___"] = doc.get("path").encode('utf-8')
-        d["___name___"] = doc.get("name").encode('utf-8')
+        d["txtorg_id"] = doc.get("txtorg_id").encode('utf-8')
         allDicts.append(d)
     names = set(allTerms)
     
@@ -65,7 +66,7 @@ def run(searcher, analyzer, reader, command):
 def writeTDM(allDicts,allTerms,fname):
     l = list(allTerms)
     l.sort()
-    l = ['___name___','___path___']+l
+    l = ['txtorg_id']+l
 
     f = open(fname,'w')
     c = csv.DictWriter(f,l)
@@ -100,14 +101,13 @@ def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, fname):
         outf.write(vocab_output)
 
     print 'Writing TDM...'
-    # writes TDM in format 'filepath, name, numterms, termid1: termcount1, [termid2:termcount2], [...]'
+    # writes TDM in format 'txtorg_id, numterms, termid1: termcount1, [termid2:termcount2], [...]'
     tdm_output = []
     for document_dict in allDicts:
         numterms = len(document_dict) - 2
-        name = document_dict['___name___']
-        path = document_dict['___path___']
-        terms = [str(termid_dict[k]) + ':' + str(document_dict[k]) for k in document_dict.keys() if k not in ['___name___', '___path___']]
-        tdm_output.append(','.join([name,path,str(numterms)] + terms))
+        txtorg_id = document_dict['txtorg_id']
+        terms = [str(termid_dict[k]) + ':' + str(document_dict[k]) for k in document_dict.keys() if k != 'txtorg_id']
+        tdm_output.append(','.join([txtorg_id,str(numterms)] + terms))
     with codecs.open(fname, 'w', encoding='UTF-8') as outf:
         outf.write('\n'.join(tdm_output))
 

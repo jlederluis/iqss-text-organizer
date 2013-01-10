@@ -11,11 +11,11 @@ class Corpus:
     allTerms = None
     allDicts = None
 
-    def __init__(self, path, analyzer_str = None, field_dict = None):
+    def __init__(self, path, analyzer_str = None, field_dict = None, content_field = "contents"):
         self.path = path
         self.field_dict = {} if field_dict is None else field_dict
         if analyzer_str is None: analyzer_str = "StandardAnalyzer"
-
+        self.content_field = "contents" if content_field is None else content_field.lower()
         self.analyzer_str = analyzer_str
         self.analyzer = self.get_analyzer_from_str(analyzer_str)
         
@@ -111,7 +111,7 @@ class Worker(threading.Thread):
         start_time = datetime.datetime.now()
         try:
             self.parent.write({'status': 'Running Lucene query %s' % (command,)})
-            scoreDocs, allTerms, allDicts = searchfiles.run(self.searcher, self.analyzer, self.reader, command)
+            scoreDocs, allTerms, allDicts = searchfiles.run(self.searcher, self.analyzer, self.reader, command, self.corpus.content_field)
                 
         except lucene.JavaError as e:
             if 'ParseException' in str(e):
@@ -151,7 +151,7 @@ class Worker(threading.Thread):
                 old_file.append(line)
             if stop == -1: stop = idx+1
 
-        new_segment = ["CORPUS: " + corpus_directory + '\n', "_ANALYZER: " + self.corpus.analyzer_str +'\n']
+        new_segment = ["CORPUS: " + corpus_directory + '\n', "_ANALYZER: " + self.corpus.analyzer_str +'\n', "_CONTENTFIELD: " + self.corpus.content_field + '\n']
 
         for k in metadata_dict.keys():
             metadata_dict[k] = metadata_dict[k]
@@ -169,3 +169,5 @@ class Worker(threading.Thread):
 
         self.parent.write({'rebuild_cache_complete': None})
         self.parent.write({'message': 'Finished rebuilding cache file.'})
+
+
