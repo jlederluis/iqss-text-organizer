@@ -83,9 +83,10 @@ class PorterStemmerAnalyzerBasic(PythonAnalyzer):
 
         result = StandardTokenizer(Version.LUCENE_CURRENT, reader)
         result = StandardFilter(result)
-        result = LowerCaseFilter(result)        
+        result = LowerCaseFilter(result) 
+        result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)       
         result = PorterStemFilter(result)
-        result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)
+	result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)  
         return result
 
 class PorterStemmerAnalyzerPhrases(PythonAnalyzer):
@@ -106,9 +107,9 @@ class PorterStemmerAnalyzerPhrases(PythonAnalyzer):
         result = StandardTokenizer(Version.LUCENE_CURRENT, reader)
         result = StandardFilter(result)
         result = LowerCaseFilter(result)        
+        result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)
         result = PorterStemFilter(result)
 #       result = PhraseFilter(result,self.myPhrases)        
-        result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)
         return result
 
 class QueryAnalyzer(PythonAnalyzer):
