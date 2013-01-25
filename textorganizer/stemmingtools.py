@@ -74,24 +74,40 @@ class PhraseFilter(PythonTokenFilter):
         AnalyzerUtils.setPositionIncrement(self.save, 0)
         self.phraseStack.append(self.save.captureState())
 
-
-class PorterStemmerAnalyzer(PythonAnalyzer):
+class PorterStemmerAnalyzerBasic(PythonAnalyzer):
     '''
-    An analyzer that uses the phrase filter and a list of phrases
-    to add tokens for phrases as well as applying the porter stemming
-    algorithm.
+    An analyzer that stems and removes stopwords.
     '''
-
-    def setPhrases(self, myPhrases):
-        self.myPhrases = myPhrases
-
+        
     def tokenStream(self, fieldName, reader):
 
         result = StandardTokenizer(Version.LUCENE_CURRENT, reader)
         result = StandardFilter(result)
         result = LowerCaseFilter(result)        
         result = PorterStemFilter(result)
-        result = PhraseFilter(result,self.myPhrases)        
+        result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)
+        return result
+
+class PorterStemmerAnalyzerPhrases(PythonAnalyzer):
+    '''
+    An analyzer that uses the phrase filter and a list of phrases
+    to add tokens for phrases as well as applying the porter stemming
+    algorithm.
+    '''
+    def __init__(self, phrases = []): 
+        PythonAnalyzer.__init__(self) 
+        self.setPhrases(phrases)
+
+    def setPhrases(self, myPhrases):
+        self.myPhrases = myPhrases
+        
+    def tokenStream(self, fieldName, reader):
+
+        result = StandardTokenizer(Version.LUCENE_CURRENT, reader)
+        result = StandardFilter(result)
+        result = LowerCaseFilter(result)        
+        result = PorterStemFilter(result)
+#       result = PhraseFilter(result,self.myPhrases)        
         result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)
         return result
 

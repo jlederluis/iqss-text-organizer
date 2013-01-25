@@ -3,7 +3,7 @@ import tkFileDialog
 import math,random
 import os, sys, lucene, thread, time
 from lucene import Version, \
-     StopAnalyzer, SimpleAnalyzer, WhitespaceAnalyzer, StandardAnalyzer
+     StopAnalyzer, SimpleAnalyzer, WhitespaceAnalyzer, StandardAnalyzer 
 from . import stemmingtools
 
 class AnalyzerChooser:
@@ -16,17 +16,21 @@ class AnalyzerChooser:
         self.analyzers = [WhitespaceAnalyzer(),
                           SimpleAnalyzer(),
                           StopAnalyzer(Version.LUCENE_CURRENT),
-                          StandardAnalyzer(Version.LUCENE_CURRENT)]
+                          StandardAnalyzer(Version.LUCENE_CURRENT),
+                          stemmingtools.PorterStemmerAnalyzerBasic(Version.LUCENE_CURRENT),
+                          stemmingtools.PorterStemmerAnalyzerPhrases(Version.LUCENE_CURRENT)]
                           
         self.analyzerliststr = ['WhitespaceAnalyzer',
                                 'SimpleAnalyzer',
                                 'StopAnalyzer',
-                                'StandardAnalyzer']                
+                                'StandardAnalyzer',
+                                'PorterStemmerAnalyzerBasic',
+                                'PorterStemmerAnalyzerPhrases']                
         
         f = PanedWindow(r, showhandle=True)
         lf = PanedWindow(f, relief=GROOVE, borderwidth=2,showhandle=True)
         f.pack(fill=BOTH,expand=1)
-        Label(lf, text="Corpus").pack(pady=10,padx=10)
+        Label(lf, text="Analyzer").pack(pady=10,padx=10)
 
         # Items in the left frame
         self.analyzerlist = Listbox(lf, exportselection=False)
