@@ -80,7 +80,7 @@ def writeTDM(allDicts,allTerms,fname):
         c.writerow(d)
     f.close()
 
-def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, fname):
+def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, reader, fname):
     l = list(allTerms)
     l.sort()
     
@@ -113,14 +113,19 @@ def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, fname):
 
     print 'Writing metadata...'
     # writes metadata in CSV format
+    all_ids = [d['txtorg_id'] for d in allDicts]
 
-    write_metadata(searcher,scoreDocs,md_filename)
+    write_metadata(searcher, reader, all_ids, md_filename)
     
-def write_metadata(searcher,scoreDocs,fname):
+def write_metadata(searcher, reader, document_ids,fname):
     allFields = set([])
     docFields = []
 
-    for scoreDoc in scoreDocs:
+    for txtorg_id in document_ids:
+        query = TermQuery(Term('txtorg_id',txtorg_id))
+        scoreDocs = searcher.search(query, reader.maxDoc()).scoreDocs
+        assert len(scoreDocs) == 1
+        scoreDoc = scoreDocs[0]
         doc = searcher.doc(scoreDoc.doc)
         df = {}
         for f in doc.getFields():

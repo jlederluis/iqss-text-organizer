@@ -132,7 +132,7 @@ class Worker(threading.Thread):
             self.parent.write({'error': "No documents selected, please run a query before exporting a TDM."})
             return
 
-        searchfiles.write_CTM_TDM(self.corpus.scoreDocs, self.corpus.allDicts, self.corpus.allTerms, self.searcher, outfile)
+        searchfiles.write_CTM_TDM(self.corpus.scoreDocs, self.corpus.allDicts, self.corpus.allTerms, self.searcher, self.reader, outfile)
         self.parent.write({'message': "TDM exported successfully!"})
 
     def rebuild_metadata_cache(self, cache_filename, corpus_directory):
