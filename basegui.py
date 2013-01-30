@@ -116,7 +116,7 @@ class txtorgui:
         self.queue = Queue.Queue()
         lucene.initVM()
         self.update()
-        self.root.title('Text Organizer')
+        self.root.title('Text Organizer - Powered by Apache Lucene version %s' % (lucene.VERSION,))
         f = Frame(self.root, width=800, height=110,bg= "#%02x%02x%02x" % (78,78,78))
         lf = Frame(f, relief=GROOVE, borderwidth=2)
         Label(lf, text="Corpus", font=self.customFont).pack(pady=2,padx=2)
