@@ -22,7 +22,7 @@ class Ticker(object):
             time.sleep(1.0)
 
 
-def run(searcher, analyzer, reader, command, contents_field="contents"):
+def run(searcher, analyzer, reader, command, content_field="contents"):
 
 
 
@@ -32,8 +32,8 @@ def run(searcher, analyzer, reader, command, contents_field="contents"):
     print m
     if command == 'all':
         query = MatchAllDocsQuery()
-    elif m is None or contents_field in command:
-        query = QueryParser(Version.LUCENE_CURRENT, contents_field, analyzer).parse(command)
+    elif m is None or content_field in command:
+        query = QueryParser(Version.LUCENE_CURRENT, content_field, analyzer).parse(command)
     else:
         """make a TermQuery with the fieldname and value"""
         fieldname = m.group(1)
@@ -49,7 +49,7 @@ def run(searcher, analyzer, reader, command, contents_field="contents"):
     for scoreDoc in scoreDocs:
 
         doc = searcher.doc(scoreDoc.doc)
-        vector = reader.getTermFreqVector(scoreDoc.doc,contents_field)
+        vector = reader.getTermFreqVector(scoreDoc.doc,content_field)
         if vector is None: continue
         
         d = dict()
@@ -117,7 +117,7 @@ def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, reader, fname):
 
     write_metadata(searcher, reader, all_ids, md_filename)
     
-def write_metadata(searcher, reader, document_ids,fname):
+def write_metadata(searcher, reader, document_ids, fname):
     allFields = set([])
     docFields = []
 
@@ -148,6 +148,51 @@ def write_metadata(searcher, reader, document_ids,fname):
         # writing data
         for d in docFields:
             dw.writerow(d)
+
+def write_contents(allDicts, searcher, reader, fname, content_field = "contents"):
+    all_ids = [d['txtorg_id'] for d in allDicts]
+
+    all_fields = set()
+    doc_fields = []
+    for txtorg_id in all_ids:
+        query = TermQuery(Term('txtorg_id',txtorg_id))
+        scoreDocs = searcher.search(query, reader.maxDoc()).scoreDocs
+        assert len(scoreDocs) == 1
+        scoreDoc = scoreDocs[0]
+        doc = searcher.doc(scoreDoc.doc)
+        df = {}
+        name_path_present = False
+        failFlag = False
+        for f in doc.getFields():
+            field = Field.cast_(f)
+            if content_field == "contents" and field.name() == 'path':
+                name_path_present = True
+                path = doc.get("path").encode('utf-8')
+                try:
+                    i = codecs.open(path, 'r', encoding='UTF-8')
+                    c = i.read()
+                    df[content_field] = c
+                    i.close()
+                except Exception as e:
+                    failFlag = True
+                    print "Failed for path %s with exception %s" % (path, e)
+            elif field.name() in ['txtorg_id', 'name', 'path', content_field]:
+                df[field.name()] = field.stringValue()
+        
+        all_fields = all_fields.union(set(df.keys()))
+        doc_fields.append(df)
+
+    fields = ['txtorg_id'] + sorted([x for x in all_fields if x != 'txtorg_id'])
+    with codecs.open(fname, 'w', encoding='UTF-8') as outf:
+        dw = csv.DictWriter(outf, fields)
+        dw.writeheader()
+        
+        # writing data
+        for d in doc_fields:
+            dw.writerow(d)
+
+    return failFlag
+
 
 def write_files(searcher,scoreDocs,outdir):
 

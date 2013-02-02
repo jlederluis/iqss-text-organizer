@@ -196,12 +196,14 @@ class txtorgui:
         self.docstext = Text(rf,height=1,width=20)
         self.termstext = Text(rf,height=1,width=20)
         self.exportbutton = Button(rf, text="Export TDM",state=DISABLED,command=self.saveTDM, font=self.customFont)
+        self.export_files_button = Button(rf, text="Export Files",state=DISABLED,command=self.save_files, font=self.customFont)
         self.docstext.insert(END,"Documents: 0")
         self.termstext.insert(END,"Terms: 0")        
 
         self.docstext.pack()
         self.termstext.pack()
         self.exportbutton.pack()        
+        self.export_files_button.pack()        
         
         
         rf.pack(side=RIGHT, fill=BOTH, expand = 1,pady=10,padx=10)
@@ -432,11 +434,25 @@ class txtorgui:
             ('Comma Separated Variable','*.csv')
             ]
 
-        fileName = tkFileDialog.asksaveasfilename(parent=self.root,filetypes=myFormats ,title="Export the TDM as...")
+        fileName = tkFileDialog.asksaveasfilename(parent=self.root,filetypes=myFormats ,title="Export TDM as...")
         if fileName == "" or fileName == ():
             return
 
         c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm': fileName})
+        c.start()
+
+    def save_files(self):
+        """pop up a dialog to save the files"""
+
+        myFormats = [
+            ('Comma Separated Variable','*.csv')
+            ]
+
+        fileName = tkFileDialog.asksaveasfilename(parent=self.root,filetypes=myFormats)
+        if fileName == "" or fileName == ():
+            return
+
+        c = Worker(self, self.corpora[self.corpus_idx], {'export_contents': fileName})
         c.start()
 
     def runQuery(self):
@@ -467,8 +483,10 @@ class txtorgui:
 
         if (len(scoreDocs)>0 and len(allTerms)>0):
             self.exportbutton.configure(state=NORMAL)
+            self.export_files_button.configure(state=NORMAL)
         else:
             self.exportbutton.configure(state=DISABLED)
+            self.export_files_button.configure(state=DISABLED)
             
         
 top = txtorgui()

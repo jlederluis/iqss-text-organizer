@@ -11,7 +11,7 @@ class Corpus:
     allTerms = None
     allDicts = None
 
-    def __init__(self, path, analyzer_str = None, field_dict = None, content_field = "contents"):
+    def __init__(self, path, analyzer_str = None, field_dict = None, content_field = None):
         self.path = path
         self.field_dict = {} if field_dict is None else field_dict
         if analyzer_str is None: analyzer_str = "StandardAnalyzer"
@@ -52,6 +52,8 @@ class Worker(threading.Thread):
             self.run_searcher(self.action['search'])
         if "export_tdm" in self.action.keys():
             self.export_TDM(self.action['export_tdm'])
+        if "export_contents" in self.action.keys():
+            self.export_contents(self.action['export_contents'])
         if "import_directory" in self.action.keys():
             self.import_directory(self.action['import_directory'])
         if "import_csv" in self.action.keys():
@@ -134,6 +136,18 @@ class Worker(threading.Thread):
 
         searchfiles.write_CTM_TDM(self.corpus.scoreDocs, self.corpus.allDicts, self.corpus.allTerms, self.searcher, self.reader, outfile)
         self.parent.write({'message': "TDM exported successfully!"})
+
+    def export_contents(self, outfile):
+        if self.corpus.scoreDocs is None or self.corpus.allTerms is None or self.corpus.allDicts is None:
+            self.parent.write({'error': "No documents selected, please run a query before exporting document contents."})
+            return
+
+        failed = searchfiles.write_contents(self.corpus.allDicts, self.searcher, self.reader, outfile, content_field = self.corpus.content_field)
+        if not failed:
+            self.parent.write({'message': "Document contents exported successfully!"})
+        else:
+            self.parent.write({'error': "Some documents could not be exported. Please check to make sure no files have moved on disk."})
+
 
     def rebuild_metadata_cache(self, cache_filename, corpus_directory):
         metadata_dict = indexutils.get_fields_and_values(self.reader)
