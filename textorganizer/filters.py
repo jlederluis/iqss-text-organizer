@@ -1,15 +1,15 @@
 import re
-import lucene
+from lucene import *
 
-class NumericFilter(lucene.PythonTokenFilter):
+class NumericFilter(PythonTokenFilter):
     '''
     NumericFilter is a TokenFilter that removes any tokens
     containing numbers.
     '''
 
     def __init__(self, in_stream):
-        lucene.PythonTokenFilter.__init__(self, in_stream)
-        term = self.term = self.addAttribute(lucene.TermAttribute.class_)
+        PythonTokenFilter.__init__(self, in_stream)
+        term = self.term = self.addAttribute(TermAttribute.class_)
         # Get tokens.
         tokens = []
         while in_stream.incrementToken():
@@ -34,15 +34,15 @@ class NumericFilter(lucene.PythonTokenFilter):
             return False
         return True
 
-class PunctuationFilter(lucene.PythonTokenFilter):
+class PunctuationFilter(PythonTokenFilter):
     '''
     PunctuationFilter is a TokenFilter that removes punctuation and
     anything following an apostrophe.
     '''
     
     def __init__(self, in_stream):
-        lucene.PythonTokenFilter.__init__(self, in_stream)
-        term = self.term = self.addAttribute(lucene.TermAttribute.class_)
+        PythonTokenFilter.__init__(self, in_stream)
+        term = self.term = self.addAttribute(TermAttribute.class_)
         # Get tokens.
         tokens = []
         while in_stream.incrementToken():
