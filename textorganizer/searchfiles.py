@@ -104,7 +104,6 @@ def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, reader, fname):
     # writes TDM in format 'txtorg_id, numterms, termid1: termcount1, [termid2:termcount2], [...]'
     tdm_output = []
     for document_dict in allDicts:
-        print document_dict
         numterms = len(document_dict) - 1 
         txtorg_id = document_dict['txtorg_id']
         terms = [str(termid_dict[k]) + ':' + str(document_dict[k]) for k in document_dict.keys() if k != 'txtorg_id']
