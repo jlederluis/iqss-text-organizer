@@ -17,7 +17,10 @@ class PorterStemmerAnalyzerBasic(PythonAnalyzer):
         #result = PositionalNumericFilter(result)        
         #result = PunctuationFilter(result)
         #result = SNumericFilter(result)                
-        result = EnglishPossessiveFilter(result)                
+        if VERSION == '2.9.4':
+            result = EnglishPossessiveFilterHC(result)                
+        else:
+            result = EnglishPossessiveFilter(result)
         result = StandardFilter(result)
         result = LowerCaseFilter(result) 
         #result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)

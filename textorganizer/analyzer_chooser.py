@@ -1,5 +1,6 @@
 from Tkinter import *
 import tkFileDialog
+import re
 import math,random
 import os, sys, lucene, thread, time
 from lucene import Version, \
@@ -134,10 +135,10 @@ class AnalyzerChooser:
         self.updateTokens()
         
     def updateTokens(self):
-        """update the numbers displayed for the documents and terms"""                
+        """update the numbers displayed for the documents and terms"""               
 
         # Perform the search and return the number of terms and documents        
-
+        print "Update tokens"
         # Update the GUI
         self.tokentext.configure(state=NORMAL)
         
@@ -149,14 +150,25 @@ class AnalyzerChooser:
             return
         analyzer = self.analyzers[int(analyzerstr[0])]
 
+        print "Selected analyzer"
+
         self.curlucene.attachCurrentThread()
         
         tokenStream = analyzer.tokenStream("contents", lucene.StringReader(self.e.get()))
         term = tokenStream.addAttribute(lucene.TermAttribute.class_)
 
+        termA = lucene.TermAttributeImpl()
+
         if len(self.e.get())>0:
             while tokenStream.incrementToken():
-                self.tokentext.insert(END, "[%s]" %(term.term()))
+                # Note: in Lucene 2.9.4, for some reason this Attribute is not a TermAttribute
+                # This is a bug.  The hacky way around it is to parse the toString() result manually.
+                if lucene.VERSION=='2.9.4':
+                    mys = term.toString()
+                    tokenstring = re.findall('\((.*?),',mys)[0]
+                    self.tokentext.insert(END, "[%s]" %(tokenstring))
+                else:
+                    self.tokentext.insert(END, "[%s]" %(term.term()))
                 
 
     def resetTokens(self):

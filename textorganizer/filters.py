@@ -1,6 +1,80 @@
 import re
 from lucene import *
 
+## Here is the code for the EnglishPossessiveFilter in Java.
+
+# 29public final class EnglishPossessiveFilter extends TokenFilter {
+# 30  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+# 31
+# 32  public EnglishPossessiveFilter(TokenStream input) {
+# 33    super(input);
+# 34  }
+# 35
+# 36  @Override
+# 37  public boolean incrementToken() throws IOException {
+# 38    if (!input.incrementToken()) {
+# 39      return false;
+# 40    }
+# 41    
+# 42    final char[] buffer = termAtt.buffer();
+# 43    final int bufferLength = termAtt.length();
+# 44    
+# 45    if (bufferLength >= 2 &&
+# 46        buffer[bufferLength-2] == '\'' &&
+# 47        (buffer[bufferLength-1] == 's' || buffer[bufferLength-1] == 'S'))
+# 48      termAtt.setLength(bufferLength - 2); // Strip last 2 characters off
+# 49
+# 50    return true;
+# 51  }
+# 52}
+
+class EnglishPossessiveFilterHC(PythonTokenFilter):
+
+    def __init__(self, tokenStream):
+
+        super(EnglishPossessiveFilterHC, self).__init__(tokenStream)
+
+        self.input = tokenStream
+
+    def next(self):
+
+        for token in self.input:
+            mytoken = token.termText()
+            m = re.search("'[sS]$",mytoken)
+            if m:
+                token.setTermBuffer(mytoken[0:m.start()])
+                return token
+            else:
+                return token
+
+        return None
+
+            
+class PositionalStopFilter(PythonTokenFilter):
+
+    def __init__(self, tokenStream, stopWords):
+
+        super(PositionalStopFilter, self).__init__(tokenStream)
+
+        self.input = tokenStream
+        self.stopWords = stopWords
+
+    def next(self):
+
+        increment = 0
+
+        for token in self.input:
+            if not token.termText() in self.stopWords:
+                token.setPositionIncrement(token.getPositionIncrement() +
+                                           increment)
+                return token
+
+            increment += 1
+
+        return None
+
+
+
 class NumericFilter(PythonTokenFilter):
     '''
     NumericFilter is a TokenFilter that removes any tokens
