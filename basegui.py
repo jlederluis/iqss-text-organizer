@@ -49,6 +49,36 @@ class ImportDialog:
 
         self.top.destroy()
 
+class SaveTDMDialog:
+    def __init__(self, parent, callback):
+        self.parent = parent
+        self.callback = callback
+        top = self.top = Toplevel(parent)
+        self.choice_var = IntVar()
+        Radiobutton(top, text="CTM format", variable=self.choice_var, value=1).pack(anchor=W)
+        Radiobutton(top, text="Flat CSV file", variable=self.choice_var, value=2).pack(anchor=W)
+        b = Button(top, text="OK", command=self.ok)
+        b.pack(pady=5)
+
+    def ok(self):
+        myFormats = [
+            ('Comma Separated Variable','*.csv')
+            ]
+
+
+        if self.choice_var.get() == 1:
+            fileName = tkFileDialog.asksaveasfilename(parent=self.top,filetypes=myFormats ,title="Export TDM as...")
+            if fileName == "" or fileName == ():
+                return
+            self.callback({'ctm': fileName})
+            
+        elif self.choice_var.get() == 2:
+            fileName = tkFileDialog.asksaveasfilename(parent=self.top,filetypes=myFormats ,title="Export TDM as...")
+            if fileName == "" or fileName == ():
+                return
+            self.callback({'csv': fileName})          
+
+        self.top.destroy()
 
 class FieldSelectDialog:
     def __init__(self, csv_file, parent, callback):
@@ -195,7 +225,7 @@ class txtorgui:
         Label(rf, text="Outputs", font=self.customFont).pack(pady=2,padx=2)
         self.docstext = Text(rf,height=1,width=20)
         self.termstext = Text(rf,height=1,width=20)
-        self.exportbutton = Button(rf, text="Export TDM",state=DISABLED,command=self.saveTDM, font=self.customFont)
+        self.exportbutton = Button(rf, text="Export TDM",state=DISABLED,command=self.save_tdm_btn_click, font=self.customFont)
         self.export_files_button = Button(rf, text="Export Files",state=DISABLED,command=self.save_files, font=self.customFont)
         self.docstext.insert(END,"Documents: 0")
         self.termstext.insert(END,"Terms: 0")        
@@ -426,20 +456,17 @@ class txtorgui:
         for x in self.corpora[self.corpus_idx].field_dict[selected_field]:
             self.mdvallist.insert(END, x)
 
-    def saveTDM(self):        
-        """pop up a dialog to save the TDM"""
-        print "saveTDM"
+    def save_tdm_btn_click(self):
+        d = SaveTDMDialog(self.root, self.saveTDM)
+        self.root.wait_window(d.top)
 
-        myFormats = [
-            ('Comma Separated Variable','*.csv')
-            ]
+    def saveTDM(self, args):
+        if 'ctm' in args:
+            c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm': args['ctm']})
+            c.start()
+        elif 'csv' in args:
+            print "not yet implemented"
 
-        fileName = tkFileDialog.asksaveasfilename(parent=self.root,filetypes=myFormats ,title="Export TDM as...")
-        if fileName == "" or fileName == ():
-            return
-
-        c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm': fileName})
-        c.start()
 
     def save_files(self):
         """pop up a dialog to save the files"""
