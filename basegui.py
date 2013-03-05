@@ -65,17 +65,13 @@ class SaveTDMDialog:
             ('Comma Separated Variable','*.csv')
             ]
 
+        fileName = tkFileDialog.asksaveasfilename(parent=self.top,filetypes=myFormats ,title="Export TDM as...")
+        if fileName == "" or fileName == ():
+            return
 
         if self.choice_var.get() == 1:
-            fileName = tkFileDialog.asksaveasfilename(parent=self.top,filetypes=myFormats ,title="Export TDM as...")
-            if fileName == "" or fileName == ():
-                return
             self.callback({'ctm': fileName})
-            
         elif self.choice_var.get() == 2:
-            fileName = tkFileDialog.asksaveasfilename(parent=self.top,filetypes=myFormats ,title="Export TDM as...")
-            if fileName == "" or fileName == ():
-                return
             self.callback({'csv': fileName})          
 
         self.top.destroy()
@@ -465,7 +461,8 @@ class txtorgui:
             c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm': args['ctm']})
             c.start()
         elif 'csv' in args:
-            print "not yet implemented"
+            c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm_csv': args['csv']})
+            c.start()
 
 
     def save_files(self):
