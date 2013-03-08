@@ -80,7 +80,7 @@ def writeTDM(allDicts,allTerms,fname):
         c.writerow(d)
     f.close()
 
-def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, reader, fname):
+def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, reader, fname, stm_format = False):
     l = list(allTerms)
     l.sort()
     
@@ -102,12 +102,16 @@ def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, reader, fname):
 
     print 'Writing TDM...'
     # writes TDM in format 'txtorg_id, numterms, termid1: termcount1, [termid2:termcount2], [...]'
+    # or, if stm_format = True, uses format 'numterms termid1:termcount1 termid2:termcount2 [...]'
     tdm_output = []
     for document_dict in allDicts:
         numterms = len(document_dict) - 1 
         txtorg_id = document_dict['txtorg_id']
         terms = [str(termid_dict[k]) + ':' + str(document_dict[k]) for k in document_dict.keys() if k != 'txtorg_id']
-        tdm_output.append(','.join([txtorg_id,str(numterms)] + terms))
+        if stm_format:
+            tdm_output.append(' '.join([str(numterms)] + terms))
+        else:
+            tdm_output.append(','.join([txtorg_id,str(numterms)] + terms))
     with codecs.open(fname, 'w', encoding='UTF-8') as outf:
         outf.write('\n'.join(tdm_output))
 

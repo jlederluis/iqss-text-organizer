@@ -48,12 +48,15 @@ class Worker(threading.Thread):
         vm_env = lucene.getVMEnv()
         vm_env.attachCurrentThread()
 
+        # yeah, this should be refactored
         if "search" in self.action.keys():
             self.run_searcher(self.action['search'])
         if "export_tdm" in self.action.keys():
             self.export_TDM(self.action['export_tdm'])
         if "export_tdm_csv" in self.action.keys():
             self.export_TDM_csv(self.action['export_tdm_csv'])
+        if "export_tdm_stm" in self.action.keys():
+            self.export_TDM_stm(self.action['export_tdm_stm'])
         if "export_contents" in self.action.keys():
             self.export_contents(self.action['export_contents'])
         if "import_directory" in self.action.keys():
@@ -145,6 +148,14 @@ class Worker(threading.Thread):
             return
 
         searchfiles.writeTDM(self.corpus.allDicts, self.corpus.allTerms, outfile)
+        self.parent.write({'message': "TDM exported successfully!"})
+
+    def export_TDM_stm(self, outfile):
+        if self.corpus.scoreDocs is None or self.corpus.allTerms is None or self.corpus.allDicts is None:
+            self.parent.write({'error': "No documents selected, please run a query before exporting a TDM."})
+            return
+
+        searchfiles.write_CTM_TDM(self.corpus.scoreDocs, self.corpus.allDicts, self.corpus.allTerms, self.searcher, self.reader, outfile, stm_format = True)
         self.parent.write({'message': "TDM exported successfully!"})
 
     def export_contents(self, outfile):

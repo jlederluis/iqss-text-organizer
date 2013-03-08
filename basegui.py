@@ -56,7 +56,8 @@ class SaveTDMDialog:
         top = self.top = Toplevel(parent)
         self.choice_var = IntVar()
         Radiobutton(top, text="CTM format", variable=self.choice_var, value=1).pack(anchor=W)
-        Radiobutton(top, text="Flat CSV file", variable=self.choice_var, value=2).pack(anchor=W)
+        Radiobutton(top, text="STM format", variable=self.choice_var, value=2).pack(anchor=W)
+        Radiobutton(top, text="Flat CSV file", variable=self.choice_var, value=3).pack(anchor=W)
         b = Button(top, text="OK", command=self.ok)
         b.pack(pady=5)
 
@@ -71,7 +72,9 @@ class SaveTDMDialog:
 
         if self.choice_var.get() == 1:
             self.callback({'ctm': fileName})
-        elif self.choice_var.get() == 2:
+        if self.choice_var.get() == 2:
+            self.callback({'stm': fileName})
+        elif self.choice_var.get() == 3:
             self.callback({'csv': fileName})          
 
         self.top.destroy()
@@ -459,6 +462,9 @@ class txtorgui:
     def saveTDM(self, args):
         if 'ctm' in args:
             c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm': args['ctm']})
+            c.start()
+        elif 'stm' in args:
+            c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm_stm': args['stm']})
             c.start()
         elif 'csv' in args:
             c = Worker(self, self.corpora[self.corpus_idx], {'export_tdm_csv': args['csv']})
