@@ -11,10 +11,16 @@ import os
 import time
 import re
 import csv
+
+try:
+    import lucene
+    print "Pylucene found, using Lucene version %s" %(lucene.VERSION,)
+except:
+    sys.exit("Pylucene not found. Aborting")
+
 from textorganizer.engine import Corpus, Worker
 from textorganizer.analyzer_chooser import AnalyzerChooser
 import Queue
-import lucene
 from functools import partial
 
 class ImportDialog:
@@ -140,7 +146,7 @@ class StatusBar(Frame):
 class txtorgui:
     def __init__(self):
 
-        self.cache_file = os.path.join(os.path.dirname(__file__), "available_indices_gui")
+        self.cache_file = os.path.expanduser('~/.txtorg_index')
 
         self.root = Tk()
         self.customFont = tkFont.Font(family="Verdana", size=10)
@@ -520,5 +526,5 @@ class txtorgui:
             self.exportbutton.configure(state=DISABLED)
             self.export_files_button.configure(state=DISABLED)
             
-        
+
 top = txtorgui()
