@@ -19,7 +19,7 @@ class AnalyzerChooser:
                           StopAnalyzer(Version.LUCENE_CURRENT),
                           StandardAnalyzer(Version.LUCENE_CURRENT),
                           stemmingtools.PorterStemmerAnalyzerBasic(Version.LUCENE_CURRENT),
-                          stemmingtools.PorterStemmerAnalyzerPhrases(Version.LUCENE_CURRENT)]
+                          stemmingtools.PorterStemmerAnalyzerPhrases(os.path.expanduser('~/phrases.txt'))]
                           
         self.analyzerliststr = ['WhitespaceAnalyzer',
                                 'SimpleAnalyzer',

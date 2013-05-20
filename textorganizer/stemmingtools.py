@@ -36,12 +36,18 @@ class PorterStemmerAnalyzerPhrases(PythonAnalyzer):
     to add tokens for phrases as well as applying the porter stemming
     algorithm.
     '''
-    def __init__(self, phrases = []): 
+    def __init__(self, phrase_file = None): 
         PythonAnalyzer.__init__(self) 
-        self.setPhrases(phrases)
+        self.myPhrases = self.get_phrases(phrase_file)
 
-    def setPhrases(self, myPhrases):
-        self.myPhrases = myPhrases
+    def get_phrases(self, phrase_file):
+        if not phrase_file:
+            return None
+        try:
+            with codecs.open(phrase_file, 'r') as inf:
+                return [line.strip() for line in inf]
+        except:
+            return None
         
     def tokenStream(self, fieldName, reader):
 
@@ -50,7 +56,8 @@ class PorterStemmerAnalyzerPhrases(PythonAnalyzer):
         result = LowerCaseFilter(result)        
         result = StopFilter(True, result, StopAnalyzer.ENGLISH_STOP_WORDS_SET)
         result = PorterStemFilter(result)
-#       result = PhraseFilter(result,self.myPhrases)        
+        if self.myPhrases:
+            result = PhraseFilter(result,self.myPhrases)        
         return result
 
 class QueryAnalyzer(PythonAnalyzer):
