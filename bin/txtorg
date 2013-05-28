@@ -95,23 +95,27 @@ class FieldSelectDialog:
         top = self.top = Toplevel(parent)
         Label(top, text="Choose the field containing text data to index:").pack()
 
-        self.choice_var = IntVar()
 
-        print "first"
         with codecs.open(csv_file, 'r', encoding='UTF-8') as inf:
             csvreader = csv.reader(inf, delimiter=',', quotechar='"')
             self.fieldnames = csvreader.next()
-        print "got here"
+
+        self.fieldname_listbox = Listbox(top)
+        self.fieldname_listbox.pack()
 
         for idx, f in enumerate(self.fieldnames):
-            Radiobutton(top, text=f, variable=self.choice_var, value=idx).pack(anchor=W)
+            self.fieldname_listbox.insert(END, f)
+            # Radiobutton(top, text=f, variable=self.choice_var, value=idx).pack(anchor=W)
 
         b = Button(top, text="OK", command=self.ok)
         b.pack(pady=5)
 
     def ok(self):
-        self.callback(self.fieldnames[self.choice_var.get()])            
-        self.top.destroy()
+        sel = self.fieldname_listbox.curselection()
+        if len(sel) == 1:
+            self.callback(self.fieldnames[int(sel[0])])
+            self.top.destroy()
+
 
 
 class EntryDialog:
