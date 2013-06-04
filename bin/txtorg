@@ -176,6 +176,7 @@ class txtorgui:
         self.menu_c.add_command(label="Import Documents...", command=self.import_btn_click, font=self.customFont, state=DISABLED)
         self.menu_c.add_command(label="Rebuild Index File...", command=self.rebuild_btn_click, font=self.customFont, state=DISABLED)
         self.menu_c.add_command(label="Change Analyzer...", command=self.change_analyzer, font=self.customFont, state=DISABLED)
+        self.menu_c.add_command(label="Delete Corpus...", command=self.delete_corpus, font=self.customFont, state=DISABLED)
 
 
         f.master.config(menu=self.menubar)
@@ -328,6 +329,10 @@ class txtorgui:
 
     def change_analyzer(self):
         analyzer_gui = AnalyzerChooser(self)
+
+    def delete_corpus(self):
+        c = Worker(self, self.corpora[self.corpus_idx], {'delete': self.cache_file})
+        c.start()
 
     def set_analyzer(self, analyzer_str, analyzer):
         self.status.set("Rebuilding Index to use analyzer %s... This could take a while depending on the size of the corpus." % (analyzer_str,))

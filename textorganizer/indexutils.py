@@ -1,7 +1,7 @@
 from lucene import \
     SimpleFSDirectory, File, IndexReader, Term, Term, IndexWriter, Version, StandardAnalyzer, TermQuery, IndexSearcher, Document, Field
 
-import threading, sys, time, os, csv, re, codecs
+import threading, sys, time, os, csv, re, codecs, shutil
 from collections import defaultdict
 
 def reindex_all(reader, writer, analyzer):
@@ -36,7 +36,8 @@ def reindex_all(reader, writer, analyzer):
             writer.updateDocument(Term("txtorg_id",pkid),edited_doc,analyzer)
 
 
-        
+def delete_index(index_path):
+    shutil.rmtree(index_path)
 
 def get_fields_and_values(reader, max_vals = 30):
     all_fields = defaultdict(set)

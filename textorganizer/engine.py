@@ -51,6 +51,8 @@ class Worker(threading.Thread):
         # yeah, this should be refactored
         if "search" in self.action.keys():
             self.run_searcher(self.action['search'])
+        if "delete" in self.action.keys():
+            self.delete_index(self.action['delete'])
         if "export_tdm" in self.action.keys():
             self.export_TDM(self.action['export_tdm'])
         if "export_tdm_csv" in self.action.keys():
@@ -114,6 +116,12 @@ class Worker(threading.Thread):
         self.parent.write({'message': "Reindex successful. Corpus analyzer is now set to %s." % (self.corpus.analyzer_str,)})
         self.parent.write({'status': "Ready!"})
 
+    def delete_index(self, cache_filename):
+        indexutils.delete_index(self.corpus.path)
+        self.rebuild_metadata_cache(cache_filename, self.corpus.path, delete=True)
+        self.parent.write({'message': "Delete successful. Corpus at %s has been removed from txtorg and from disk." % (self.corpus.path,)})
+        self.parent.write({'status': "Ready!"})
+
     def run_searcher(self, command):
         start_time = datetime.datetime.now()
         try:
@@ -170,9 +178,10 @@ class Worker(threading.Thread):
             self.parent.write({'error': "Some documents could not be exported. Please check to make sure no files have moved on disk."})
 
 
-    def rebuild_metadata_cache(self, cache_filename, corpus_directory):
+    def rebuild_metadata_cache(self, cache_filename, corpus_directory, delete = False):
         metadata_dict = indexutils.get_fields_and_values(self.reader)
-        # finds the section of the old file to overwrite, and stores the old file in memory
+        # finds the section of the old file to overwrite, and stores the old file in memory.
+        # if delete is True, it will remove the index from the file
         old_file = []
         start = -1
         stop = -1
@@ -186,12 +195,15 @@ class Worker(threading.Thread):
                 old_file.append(line)
             if stop == -1: stop = idx+1
 
-        new_segment = ["CORPUS: " + corpus_directory + '\n', "_ANALYZER: " + self.corpus.analyzer_str +'\n', "_CONTENTFIELD: " + self.corpus.content_field + '\n']
+        if not delete:
+            new_segment = ["CORPUS: " + corpus_directory + '\n', "_ANALYZER: " + self.corpus.analyzer_str +'\n', "_CONTENTFIELD: " + self.corpus.content_field + '\n']
 
-        for k in metadata_dict.keys():
-            metadata_dict[k] = metadata_dict[k]
-            # sanitize various characters from input. 
-            new_segment.append(k + ": [" + "|".join(metadata_dict[k]).replace('\n','').replace(']','').replace('[','').replace(':','') + "]\n")
+            for k in metadata_dict.keys():
+                metadata_dict[k] = metadata_dict[k]
+                # sanitize various characters from input. 
+                new_segment.append(k + ": [" + "|".join(metadata_dict[k]).replace('\n','').replace(']','').replace('[','').replace(':','') + "]\n")
+        else:
+            new_segment = []
 
         if start == -1:
             new_file = old_file + new_segment
