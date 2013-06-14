@@ -1,9 +1,26 @@
 Using txtorg on the RCE
 =======================
 
+If you are using NX Client
+--------------------------
+
+Begin by logging on to the RCE virtual machine that has pylucene installed.
+
+Open your NX Client and connect to the following server:
+
+`rce-2013-alpha-vm1.hmdc.harvard.edu`
+
+Next click on Applications and then Terminal
+
+If you are using the shell
+--------------------------
+
 Begin by logging on to the RCE virtual machine that has pylucene installed.  When you log in, make sure that you enable X-forwarding:
 
 `ssh -X username@rce-2013-alpha-vm1.hmdc.harvard.edu`
+
+Once you are on the RCE terminal
+--------------------------------
 
 Then, clone this very git repository by typing:
 
@@ -19,4 +36,4 @@ In the `iqss-text-organizer/bin` directory there is an executable called `txtorg
 
 `./iqss-text-organizer/bin/txtorg`
 
-If you have X-forwarding enabled, a new window should pop up with the txtorg GUI.
+This should open a new window with the txtorg GUI.
