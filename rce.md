@@ -34,8 +34,15 @@ Now, run the install script, but specifying that it should be installed only for
 
 `python setup.py install --user`
 
-In the `iqss-text-organizer/bin` directory there is an executable called `txtorg`.  You can execute this as follows from the `iqss-text-organizer` directory:
+In the `iqss-text-organizer/bin` directory there is an executable called `txtorg`.  
+
+If you followed the instructions above, you are in the `iqss-text-organizer` directory and can run txtorg by pasting the following:
 
 `./bin/txtorg`
 
+From a new terminal, you should only need to type the following to run txtorg:
+
+`./iqss-text-organizer/bin/txtorg`
+
 This should open a new window with the txtorg GUI.
+
