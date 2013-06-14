@@ -26,14 +26,16 @@ Then, clone this very git repository by typing:
 
 `git clone https://github.com/sbrother/iqss-text-organizer.git`
 
-This should make a directory called `iqss-text-organizer`.
+This should make a directory called `iqss-text-organizer`.  Enter this directory by typing the following:
 
-Now, run the install script, but specifying that it should be installed only for this user:
+`cd iqss-text-organizer`
 
-`python iqss-text-organizer/setup.py install --user`
+Now, run the install script, but specifying that it should be installed only for this user (you do not have to change anything on the following line):
 
-In the `iqss-text-organizer/bin` directory there is an executable called `txtorg`.  You can execute this as follows:
+`python setup.py install --user`
 
-`./iqss-text-organizer/bin/txtorg`
+In the `iqss-text-organizer/bin` directory there is an executable called `txtorg`.  You can execute this as follows from the `iqss-text-organizer` directory:
+
+`./bin/txtorg`
 
 This should open a new window with the txtorg GUI.
