@@ -46,3 +46,14 @@ From a new terminal, you should only need to type the following to run txtorg:
 
 This should open a new window with the txtorg GUI.
 
+To update txtorg
+----------------
+
+Once txtorg is installed, you should update it by opening a new terminal, and typing the following commands.
+
+`cd iqss-text-organizer`
+
+`git pull`
+
+`python setup.py install --user`
+
