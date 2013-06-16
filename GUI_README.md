@@ -48,7 +48,7 @@ Getting a TDM
 
 5. To export the tdm for the selected docs, click Export TDM. Then select the format.
 
-- STM format will write a TDM, metadata file, and vocab list. The tdm will be in the format '[M] [term_1]:[count_1] [term_2]:[count_2] ... [term_N]:[count_3]', where [M] is the number of unique terms in the document, [term_i] is an integer associated with the i-th term in the vocabulary, and [count_i] is how many times the i-th term appeared in the document.
+- STM format will write a TDM, metadata file, and vocab list. The tdm will be in the format '[M] [term_1]:[count_1] [term_2]:[count_2] ... [term_N]:[count_3]', where [M] is the number of unique terms in the document, [term_i] is an integer associated with the i-th term in the vocabulary, and [count_i] is how many times the i-th term appeared in the document. This is the most common format.
 
 - CTM format will be the same as STM format, except it will be delimited by commas and will include a field for the lucene ID.
 
