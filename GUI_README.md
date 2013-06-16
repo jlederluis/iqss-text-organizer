@@ -18,8 +18,11 @@ Launching Txtorg
 From the command line, enter 'txtorg'
 
 Using Txtorg
+==============
+
+Loading your corpus
 --------------
- 
+
 1. Create a new corpus. To do so, click File -> New Corpus. You'll be prompted to select a place to store the corpus.
 
 2. The corpus should show up in the corpus window. Now select your corpus by clicking on it.
@@ -32,15 +35,18 @@ Using Txtorg
 
 - To import documents from a .csv with a field containing the full documents, select 'Import from a CSV file (including content)'. Then select the field containing the documents.
 
-4. The documents should be imported. If successful, a window will pop up and tell you so.
+Getting a TDM
+--------------
 
-5. Now pick your analyzer. Corpus -> Change Analyzer. Just click on the analyzer you want and then click OK. To see the difference between the different analyzers, enter text in the sample window, and select an analyzer. The tokens output by that analzyer will appear in the main window.
+1. The documents should be imported already. If not, see the previous section. 
 
-6. Now rebuild the index file by clicking Corpus -> Rebuild Index File.
+2. Now pick your analyzer. Corpus -> Change Analyzer. Just click on the analyzer you want and then click OK. To see the difference between the different analyzers, enter text in the sample window, and select an analyzer. The tokens output by that analzyer will appear in the main window.
 
-7. Now select docs. To select all the docs in the corpus, search for 'all'. To subset, use a valid Lucene query.
+3. Now rebuild the index file by clicking Corpus -> Rebuild Index File.
 
-8. To export the tdm for the selected docs, click Export TDM. Then select the format.
+4. Now select docs. To select all the docs in the corpus, search for 'all'. To subset, use a valid Lucene query.
+
+5. To export the tdm for the selected docs, click Export TDM. Then select the format.
 
 - STM format will write a TDM, metadata file, and vocab list. The tdm will be in the format '[M] [term_1]:[count_1] [term_2]:[count_2] ... [term_N]:[count_3]', where [M] is the number of unique terms in the document, [term_i] is an integer associated with the i-th term in the vocabulary, and [count_i] is how many times the i-th term appeared in the document.
 
