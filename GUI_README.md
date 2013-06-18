@@ -35,6 +35,8 @@ Loading your corpus
 
 - To import documents from a .csv with a field containing the full documents, select 'Import from a CSV file (including content)'. Then select the field containing the documents.
 
+NOTE: If you want to import metadata for your documents, you must import the documents from a csv containing content. The content field is uploaded as the docs, while the remaining fields are uploaded as metadata.
+
 Getting a TDM
 --------------
 
