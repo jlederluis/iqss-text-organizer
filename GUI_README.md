@@ -27,15 +27,15 @@ Loading your corpus
 
 2. The corpus should show up in the corpus window. Now select your corpus by clicking on it.
 
-3. Next, import some documents. With your corpus highlighted, click Corpus -> Import Documents. Next, select the format of your corpus.
+3. Next, import some documents. With your corpus highlighted, click Corpus -> Import Documents. Next, select the format of your corpus. We support several different corpus options described below.
 
-- To import all the documents in a directory, select 'Import an entire directory'. These must be .txt files.
+- To import all the documents in a directory (a folder), select 'Import an entire directory'. These must be .txt files. In this case, you do not have any metadata about the documents that you are uploading. 
 
-- To import documents from a .csv with a field containing the filepaths of all the documents in the corpus, select 'Import from a CSV file (not including content)'. Then select the field containing the filepaths.
+- To import documents from a .csv with a field containing the filepaths of all the documents in the corpus, select 'Import from a CSV file (not including content)'. Then select the field containing the filepaths. Any example of such a .csv is available here [Chris!]
 
 - To import documents from a .csv with a field containing the full documents, select 'Import from a CSV file (including content)'. Then select the field containing the documents.
 
-NOTE: If you want to import metadata for your documents, you must import the documents from a csv containing content. The content field is uploaded as the docs, while the remaining fields are uploaded as metadata.
+NOTE: If you want to import metadata for your documents, you must import the documents from a csv containing content. The content field is uploaded as the docs, while the remaining fields are uploaded as metadata. [Chris this is not clear. We need to describe above, for both the mturk style csv and for the other version how to deal w metadata]
 
 Getting a TDM
 --------------
