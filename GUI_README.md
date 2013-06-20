@@ -31,9 +31,9 @@ Loading your corpus
 
 - To import all the documents in a directory (a folder), select 'Import an entire directory'. These must be .txt files. In this case, you do not have any metadata about the documents that you are uploading. 
 
-- To import documents from a .csv with a field containing the filepaths of all the documents in the corpus, select 'Import from a CSV file (not including content)'. Then select the field containing the filepaths. Any example of such a .csv is available here [Chris!]
+- To import documents from a .csv with a field containing the filepaths of all the documents in the corpus, select 'Import from a CSV file (not including content)'. Then select the field containing the filepaths. brothersk_without_content.csv, in the examples directory, is an example of one such csv. 
 
-- To import documents from a .csv with a field containing the full documents, select 'Import from a CSV file (including content)'. Then select the field containing the documents.
+- To import documents from a .csv with a field containing the full documents, select 'Import from a CSV file (including content)'. Then select the field containing the documents. brothersk_with_content.csv, in the examples directory, is an example of one such csv.
 
 NOTE: If you want to import metadata for your documents, you must import the documents from a csv containing content. The content field is uploaded as the docs, while the remaining fields are uploaded as metadata. [Chris this is not clear. We need to describe above, for both the mturk style csv and for the other version how to deal w metadata]
 
