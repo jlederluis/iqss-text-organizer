@@ -57,3 +57,7 @@ Getting a TDM
 - Flat CSV will export a TDM, metadata file, and vocab list. The tdm will be a flat csv, with lots of zeros.
 
 
+Notes and Potential Problems/Solutions
+==============
+
+1. If you are unable to export a tdm, check the directory containing the Lucene index for a final 'write.locked'. If it contains such a file, delete it and try again. If that doesn't work, try reuploading the docs to a new corpus. 
