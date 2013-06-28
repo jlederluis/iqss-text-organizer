@@ -8,7 +8,7 @@ Begin by logging on to the RCE virtual machine that has pylucene installed.
 
 Open your NX Client and connect to the following server:
 
-`rce-2013-alpha-vm1.hmdc.harvard.edu`
+`rce6-1.hmdc.harvard.edu`
 
 Next click on Applications and then Terminal
 
@@ -17,7 +17,7 @@ If you are using the shell
 
 Begin by logging on to the RCE virtual machine that has pylucene installed.  When you log in, make sure that you enable X-forwarding:
 
-`ssh -X username@rce-2013-alpha-vm1.hmdc.harvard.edu`
+`ssh -X username@rce6-1.hmdc.harvard.edu`
 
 Once you are on the RCE terminal
 --------------------------------
