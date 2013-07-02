@@ -6,6 +6,8 @@ Getting Started
 Installation
 --------------
 
+Note: If installing on the RCE, see 'rce.md'.
+
 Install the package as you would any other Python package (PyPI, Distutils, etc). For example...
 
 1. Navigate to the directory in which you cloned the repo. This should contain setup.py.
