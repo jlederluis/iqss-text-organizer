@@ -97,15 +97,31 @@ class Worker(threading.Thread):
         indexfiles.IndexFiles(dirname, self.corpus.path, self.analyzer)
 
     def import_csv(self, csv_file):
-        writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
-        changed_rows = addmetadata.add_metadata_from_csv(self.searcher, self.reader, writer, csv_file, new_files=True)
-        writer.close()
+        try:
+            writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+            changed_rows = addmetadata.add_metadata_from_csv(self.searcher, self.reader, writer, csv_file, new_files=True)
+            writer.close()
+        except UnicodeDecodeError:
+            try:
+                writer.close()
+            except:
+                pass
+            self.parent.write({'error': 'CSV import failed: file contained non-unicode characters. Please save the file with UTF-8 encoding and try again!'})
+            return
         self.parent.write({'message': "CSV import complete: %s rows added." % (changed_rows,)})
 
     def import_csv_with_content(self, csv_file, content_field):
-        writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
-        changed_rows = addmetadata.add_metadata_and_content_from_csv(self.searcher, self.reader, writer, csv_file, content_field)
-        writer.close()
+        try:
+            writer = lucene.IndexWriter(lucene.SimpleFSDirectory(lucene.File(self.corpus.path)), self.analyzer, False, lucene.IndexWriter.MaxFieldLength.LIMITED)
+            changed_rows = addmetadata.add_metadata_and_content_from_csv(self.searcher, self.reader, writer, csv_file, content_field)
+            writer.close()
+        except UnicodeDecodeError:
+            try:
+                writer.close()
+            except:
+                pass
+            self.parent.write({'error': 'CSV import failed: file contained non-unicode characters. Please save the file with UTF-8 encoding and try again!'})
+            return
         self.parent.write({'message': "CSV import complete: %s rows added." % (changed_rows,)})        
 
     def reindex(self):

@@ -4,11 +4,40 @@ from lucene import \
     VERSION, initVM, Version, IndexReader, TermQuery, Term, Field, MatchAllDocsQuery
 import threading, sys, time, os, csv, re, codecs
 from shutil import copy2
-
+import cStringIO
 """
 This script is loosely based on the Lucene (java implementation) demo class 
 org.apache.lucene.demo.SearchFiles.
 """
+
+# from http://stackoverflow.com/questions/5838605/python-dictwriter-writing-utf-8-encoded-csv-files
+class DictUnicodeWriter(object):
+
+    def __init__(self, f, fieldnames, dialect=csv.excel, encoding="utf-8", **kwds):
+        # Redirect output to a queue
+        self.queue = cStringIO.StringIO()
+        self.writer = csv.DictWriter(self.queue, fieldnames, dialect=dialect, **kwds)
+        self.stream = f
+        self.encoder = codecs.getincrementalencoder(encoding)()
+
+    def writerow(self, D):
+        self.writer.writerow({k:v.encode("utf-8") for k,v in D.items()})
+        # Fetch UTF-8 output from the queue ...
+        data = self.queue.getvalue()
+        data = data.decode("utf-8")
+        # ... and reencode it into the target encoding
+        # data = self.encoder.encode(data)
+        # write to the target stream
+        self.stream.write(data)
+        # empty queue
+        self.queue.truncate(0)
+
+    def writerows(self, rows):
+        for D in rows:
+            self.writerow(D)
+
+    def writeheader(self):
+        self.writer.writeheader()
 
 class Ticker(object):
 
@@ -98,7 +127,7 @@ def write_CTM_TDM(scoreDocs, allDicts, allTerms, searcher, reader, fname, stm_fo
     vocab_lines = [str(termid_dict[term]) + ',' + term for term in l]
     vocab_output = '\n'.join(['term_id,term'] + vocab_lines)
     with codecs.open(vocab_filename, 'w', encoding='UTF-8') as outf:
-        outf.write(vocab_output)
+        outf.write(vocab_output.decode('utf8'))
 
     print 'Writing TDM...'
     # writes TDM in format 'txtorg_id, numterms, termid1: termcount1, [termid2:termcount2], [...]'
@@ -141,7 +170,7 @@ def write_metadata(searcher, reader, document_ids, fname):
     
     fields = ['name','path'] + sorted([x for x in allFields if x not in ['name','path']])
     with codecs.open(fname, 'w', encoding='UTF-8') as outf:
-        dw = csv.DictWriter(outf, fields)
+        dw = DictUnicodeWriter(outf, fields)
         
         # writing header
         dhead = dict()
